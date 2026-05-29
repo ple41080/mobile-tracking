@@ -22,6 +22,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "newArchEnabled": true,
     "plugins": [
       "expo-router",
       "expo-splash-screen"

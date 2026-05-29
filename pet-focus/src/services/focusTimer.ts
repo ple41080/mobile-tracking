@@ -1,5 +1,4 @@
-import { AppState, AppStateStatus, Platform } from 'react-native'
-import * as Notifications from 'expo-notifications'
+import { AppState, AppStateStatus } from 'react-native'
 
 let appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null
 let timerInterval: ReturnType<typeof setInterval> | null = null
@@ -7,21 +6,6 @@ let onTickCallback: (() => void) | null = null
 let onFailCallback: (() => void) | null = null
 let onCompleteCallback: (() => void) | null = null
 let didLeaveApp = false
-
-export async function scheduleFocusNotification(minutes: number) {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: '🐱 กำลังโฟกัส...',
-      body: `เหลืออีก ${minutes} นาที โปโป้รอนายอยู่!`,
-      sticky: true,
-    },
-    trigger: null,
-  })
-}
-
-export async function cancelFocusNotification() {
-  await Notifications.dismissAllNotificationsAsync()
-}
 
 export function startFocusTimer(
   onTick: () => void,
@@ -60,7 +44,6 @@ export function stopFocusTimer() {
     appStateSubscription.remove()
     appStateSubscription = null
   }
-  cancelFocusNotification()
 }
 
 export function signalComplete() {
