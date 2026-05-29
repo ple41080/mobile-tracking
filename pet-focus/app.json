@@ -25,7 +25,8 @@
     "newArchEnabled": true,
     "plugins": [
       "expo-router",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "rive-react-native"
     ]
   }
 }
