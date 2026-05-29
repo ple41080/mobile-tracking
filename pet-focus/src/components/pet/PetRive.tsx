@@ -1,14 +1,18 @@
 import React, { useRef, useEffect } from 'react'
-import { View, Text, Platform } from 'react-native'
+import { View, Text, NativeModules } from 'react-native'
 import { PetMood } from '@/types/pet'
 
-// rive-react-native is a native module — requires dev build, not Expo Go
-// Wrap in try/require so Expo Go falls back gracefully
+// Rive requires native module compiled into the app (dev build, not Expo Go)
+// Check native module registry at runtime to avoid crash
+const isRiveAvailable = !!NativeModules.RiveReactNative
+
 let Rive: any = null
-try {
-  Rive = require('rive-react-native').default
-} catch {
-  // Expo Go or web — will use emoji fallback
+if (isRiveAvailable) {
+  try {
+    Rive = require('rive-react-native').default
+  } catch {
+    // ignore
+  }
 }
 
 interface PetRiveProps {
@@ -63,8 +67,7 @@ export function PetRive({
     }
   }, [mood, stateMachineName])
 
-  if (!Rive) {
-    // Fallback for Expo Go
+  if (!Rive || !isRiveAvailable) {
     return <EmojiFallback mood={mood} size={size} />
   }
 
