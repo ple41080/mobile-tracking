@@ -58,6 +58,8 @@ export const DEFAULT_BLOCKED_APPS = [
   { packageName: 'com.zhiliaoapp.musically', name: 'TikTok', emoji: '🎵' },
   { packageName: 'com.instagram.android', name: 'Instagram', emoji: '📸' },
   { packageName: 'com.facebook.katana', name: 'Facebook', emoji: '👤' },
+  { packageName: 'com.netflix.mediaclient', name: 'Netflix', emoji: '🎥' },
+  { packageName: 'com.google.android.youtube', name: 'YouTube', emoji: '🎥' },
 ]
 
 export const STREAK_BONUSES: Record<number, number> = {
@@ -69,3 +71,19 @@ export const STREAK_BONUSES: Record<number, number> = {
 }
 
 export const THAI_DAYS = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา']
+
+export type MoodValue = 1 | 2 | 3 | 4 | 5
+
+export interface MoodEntry {
+  date: string
+  mood: MoodValue
+  minutes: number
+}
+
+export const MOOD_OPTIONS: { value: MoodValue; emoji: string; label: string }[] = [
+  { value: 1, emoji: '😣', label: 'แย่' },
+  { value: 2, emoji: '😕', label: 'เหนื่อย' },
+  { value: 3, emoji: '😐', label: 'เฉยๆ' },
+  { value: 4, emoji: '🙂', label: 'ดี' },
+  { value: 5, emoji: '😄', label: 'ดีมาก' },
+]

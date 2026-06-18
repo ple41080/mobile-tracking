@@ -1,30 +1,33 @@
 import React from 'react'
 import { Tabs } from 'expo-router'
 import { View, Text } from 'react-native'
+import { useRoomStore } from '@/stores/roomStore'
 
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
   return (
-    <View className={`items-center justify-center w-8 h-8 rounded-xl ${focused ? 'bg-primary/40' : ''}`}>
-      <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
+    <View style={{ opacity: focused ? 1 : 0.5 }} className="items-center justify-center w-8 h-8">
+      <Text style={{ fontSize: 18 }}>{emoji}</Text>
     </View>
   )
 }
 
 export default function TabsLayout() {
+  const { tabBarColor } = useRoomStore()
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1A2E1A',
-          borderTopColor: 'rgba(255,255,255,0.05)',
+          backgroundColor: tabBarColor,
+          borderTopColor: 'rgba(255,255,255,0.1)',
           borderTopWidth: 1,
           height: 60,
           paddingBottom: 8,
           paddingTop: 6,
         },
-        tabBarActiveTintColor: '#5DB347',
-        tabBarInactiveTintColor: '#A0A878',
+        tabBarActiveTintColor: '#FFC94D',
+        tabBarInactiveTintColor: '#FAE7CB',
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '600',

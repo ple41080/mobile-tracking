@@ -24,11 +24,11 @@ export async function saveUserPet(userId: string, petData: Record<string, unknow
 
 export async function getUserWallet(userId: string) {
   const snap = await getDoc(doc(db, 'users', userId, 'data', 'wallet'))
-  return snap.exists() ? snap.data() : { coins: 0, gems: 0 }
+  return snap.exists() ? snap.data() : { coins: 0 }
 }
 
-export async function saveUserWallet(userId: string, coins: number, gems: number) {
-  await setDoc(doc(db, 'users', userId, 'data', 'wallet'), { coins, gems }, { merge: true })
+export async function saveUserWallet(userId: string, coins: number) {
+  await setDoc(doc(db, 'users', userId, 'data', 'wallet'), { coins }, { merge: true })
 }
 
 export async function saveFocusSession(

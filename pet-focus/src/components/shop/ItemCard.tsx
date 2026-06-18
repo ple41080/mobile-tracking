@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
-import { ShopItem, RARITY_COLORS, RARITY_LABELS } from '@/types/shop'
+import { ShopItem } from '@/types/shop'
 
 interface ItemCardProps {
   item: ShopItem
@@ -10,8 +10,6 @@ interface ItemCardProps {
 }
 
 export function ItemCard({ item, isOwned, isEquipped, onPress }: ItemCardProps) {
-  const rarityColor = RARITY_COLORS[item.rarity]
-
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -20,14 +18,6 @@ export function ItemCard({ item, isOwned, isEquipped, onPress }: ItemCardProps) 
         isEquipped ? 'border-yellow' : 'border-white/10'
       }`}
     >
-      {/* Rarity badge */}
-      <View className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full"
-        style={{ backgroundColor: rarityColor + '30' }}>
-        <Text style={{ color: rarityColor }} className="text-[9px] font-bold">
-          {RARITY_LABELS[item.rarity]}
-        </Text>
-      </View>
-
       <Text className="text-4xl text-center my-2">{item.emoji}</Text>
       <Text className="text-white text-xs font-semibold text-center" numberOfLines={1}>
         {item.name}
@@ -42,7 +32,7 @@ export function ItemCard({ item, isOwned, isEquipped, onPress }: ItemCardProps) 
           </View>
         ) : (
           <View className="flex-row items-center gap-1">
-            <Text className="text-base">{item.currency === 'coin' ? '⭐' : '💎'}</Text>
+            <Text className="text-base">⭐</Text>
             <Text className="text-white text-xs font-bold">{item.price}</Text>
           </View>
         )}

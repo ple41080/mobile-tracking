@@ -7,11 +7,10 @@ interface PetAvatarProps {
   name: string
   level: number
   happiness: number
-  // Optional: path to custom .riv file, defaults to community URL
-  riveSource?: string
+  onPat?: () => void
 }
 
-export function PetAvatar({ name, level, happiness, riveSource }: PetAvatarProps) {
+export function PetAvatar({ name, level, happiness, onPat }: PetAvatarProps) {
   const mood = getPetMood(happiness)
   const { text: moodText } = PET_MOOD_CONFIG[mood]
 
@@ -21,9 +20,9 @@ export function PetAvatar({ name, level, happiness, riveSource }: PetAvatarProps
         mood={mood}
         happiness={happiness}
         size={180}
-        riveSource={riveSource}
+        riveSource="pet_cat"
         stateMachineName="State Machine 1"
-        happinessInput="happiness"
+        onPat={onPat}
       />
       <Text className="text-text-secondary text-sm mt-1 text-center">{moodText}</Text>
       <Text className="text-white text-xl font-bold mt-1">

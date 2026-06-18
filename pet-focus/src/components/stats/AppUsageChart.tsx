@@ -30,7 +30,7 @@ export function AppUsageChart({ apps, maxMinutes }: AppUsageChartProps) {
         const m = app.minutes % 60
         const label = h > 0 ? `${h}ชม. ${m}น.` : `${m} น.`
         return (
-          <View key={app.packageName} className="gap-1">
+          <View key={`${app.packageName}-${idx}`} className="gap-1">
             <View className="flex-row justify-between">
               <Text className="text-white/90 text-sm">{app.name}</Text>
               <Text className="text-text-secondary text-xs">{label}</Text>

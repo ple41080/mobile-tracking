@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native'
+import { ThemedScreen } from '@/components/ThemedScreen'
+import { useAppTheme } from '@/hooks/useAppTheme'
 import { AppUsageChart } from '@/components/stats/AppUsageChart'
 import { AITip } from '@/components/stats/AITip'
 import { useScreenTime } from '@/hooks/useScreenTime'
-import { useFocusStore } from '@/stores/focusStore'
+import { useFocusStore, getWeeklySummary } from '@/stores/focusStore'
+import { MOOD_OPTIONS } from '@/types/focus'
 import { generateAITip } from '@/services/firebase/functions'
+import { requestUsageStatsPermission } from '@/services/usageStats'
 import { DayStats } from '@/types/focus'
 
 type Tab = 'today' | 'week' | 'month'
@@ -14,9 +17,18 @@ export default function StatsScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('today')
   const [aiTip, setAiTip] = useState<string | null>(null)
   const [tipLoading, setTipLoading] = useState(false)
+  const { surface, border } = useAppTheme()
 
   const { apps, totalMinutes, hasPermission, isLoading } = useScreenTime()
-  const { currentStreak, totalFocusMinutes } = useFocusStore()
+  const { currentStreak, totalFocusMinutes, moodLog } = useFocusStore()
+
+  const weekly = getWeeklySummary(moodLog)
+  const weeklyHours = Math.floor(weekly.focusMinutes / 60)
+  const weeklyMins = weekly.focusMinutes % 60
+  const moodEmoji =
+    weekly.avgMood != null
+      ? MOOD_OPTIONS[Math.min(4, Math.round(weekly.avgMood) - 1)].emoji
+      : '—'
 
   const TABS: { key: Tab; label: string }[] = [
     { key: 'today', label: 'วันนี้' },
@@ -47,7 +59,7 @@ export default function StatsScreen() {
   const totalMins = totalMinutes % 60
 
   return (
-    <SafeAreaView className="flex-1 bg-bg">
+    <ThemedScreen>
       <ScrollView
         className="flex-1 px-5"
         contentContainerStyle={{ paddingBottom: 32 }}
@@ -59,7 +71,7 @@ export default function StatsScreen() {
         </View>
 
         {/* Tabs */}
-        <View className="flex-row bg-surface rounded-2xl p-1 mb-4">
+        <View style={{ backgroundColor: surface }} className="flex-row rounded-2xl p-1 mb-4">
           {TABS.map((tab) => (
             <TouchableOpacity
               key={tab.key}
@@ -81,17 +93,17 @@ export default function StatsScreen() {
 
         {/* Summary cards */}
         <View className="flex-row gap-3 mb-4">
-          <View className="flex-1 bg-surface rounded-2xl p-4 items-center">
+          <View style={{ backgroundColor: surface }} className="flex-1 rounded-2xl p-4 items-center">
             <Text className="text-2xl font-bold text-white">
               {totalHours > 0 ? `${totalHours}ชม.` : `${totalMins}น.`}
             </Text>
             <Text className="text-text-secondary text-xs mt-1">Screen Time</Text>
           </View>
-          <View className="flex-1 bg-surface rounded-2xl p-4 items-center">
+          <View style={{ backgroundColor: surface }} className="flex-1 rounded-2xl p-4 items-center">
             <Text className="text-2xl font-bold text-primary-light">{currentStreak}</Text>
             <Text className="text-text-secondary text-xs mt-1">วัน Streak</Text>
           </View>
-          <View className="flex-1 bg-surface rounded-2xl p-4 items-center">
+          <View style={{ backgroundColor: surface }} className="flex-1 rounded-2xl p-4 items-center">
             <Text className="text-2xl font-bold text-yellow">{Math.floor(totalFocusMinutes / 60)}</Text>
             <Text className="text-text-secondary text-xs mt-1">ชม. โฟกัส</Text>
           </View>
@@ -99,25 +111,54 @@ export default function StatsScreen() {
 
         {/* Usage permission warning */}
         {!hasPermission && (
-          <View className="bg-orange/10 border border-orange/30 rounded-2xl p-4 mb-4">
-            <Text className="text-orange text-sm font-semibold">⚠️ ต้องการสิทธิ์ Usage Stats</Text>
+          <TouchableOpacity
+            onPress={requestUsageStatsPermission}
+            className="bg-orange/10 border border-orange/30 rounded-2xl p-4 mb-4"
+          >
+            <Text className="text-orange text-sm font-semibold">⚠️ ต้องการสิทธิ์ Usage Access</Text>
             <Text className="text-white/60 text-xs mt-1">
-              ไปที่ Settings → Digital Wellbeing → เปิดสิทธิ์ให้แอปนี้
+              กดที่นี่ → เปิด "Usage access" ให้ pet-focus → กลับมาดูสถิติ
             </Text>
-          </View>
+          </TouchableOpacity>
         )}
+
+        {/* Weekly summary (research-lite) */}
+        <View style={{ backgroundColor: surface }} className="rounded-2xl p-4 mb-4">
+          <Text className="text-white font-semibold mb-3">สรุปสัปดาห์นี้ 📅</Text>
+          <View className="flex-row justify-around">
+            <View className="items-center">
+              <Text className="text-primary-light text-xl font-bold">{weekly.sessions}</Text>
+              <Text className="text-text-secondary text-xs mt-1">โฟกัสสำเร็จ</Text>
+            </View>
+            <View className="items-center">
+              <Text className="text-yellow text-xl font-bold">
+                {weeklyHours > 0 ? `${weeklyHours}ชม. ${weeklyMins}น.` : `${weeklyMins} น.`}
+              </Text>
+              <Text className="text-text-secondary text-xs mt-1">เวลาโฟกัส</Text>
+            </View>
+            <View className="items-center">
+              <Text className="text-2xl">{moodEmoji}</Text>
+              <Text className="text-text-secondary text-xs mt-1">อารมณ์เฉลี่ย</Text>
+            </View>
+          </View>
+          {weekly.sessions === 0 && (
+            <Text className="text-text-secondary text-xs text-center mt-3">
+              ทำ Focus session แล้วบันทึกอารมณ์ เพื่อดูแนวโน้มของสัปดาห์นี้
+            </Text>
+          )}
+        </View>
 
         {/* AI Tip */}
         <AITip tip={aiTip} isLoading={tipLoading} />
 
         {/* App usage chart */}
-        <View className="mt-4 bg-surface rounded-2xl p-4">
+        <View style={{ backgroundColor: surface }} className="mt-4 rounded-2xl p-4">
           <Text className="text-white font-semibold mb-3">แอปที่ใช้มากที่สุด</Text>
           <AppUsageChart apps={apps} />
         </View>
 
         {/* Focus stats */}
-        <View className="mt-3 bg-surface rounded-2xl p-4">
+        <View style={{ backgroundColor: surface }} className="mt-3 rounded-2xl p-4">
           <Text className="text-white font-semibold mb-3">สถิติโฟกัส</Text>
           <View className="flex-row justify-around">
             <View className="items-center">
@@ -131,6 +172,6 @@ export default function StatsScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ThemedScreen>
   )
 }

@@ -1,106 +1,119 @@
 import React from 'react'
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
+import { View, Text, Dimensions, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { router } from 'expo-router'
-import { PetAvatar } from '@/components/pet/PetAvatar'
-import { StatBar } from '@/components/pet/StatBar'
-import { StreakDots } from '@/components/pet/StreakDots'
+import { LinearGradient } from 'expo-linear-gradient'
+import { PetRive } from '@/components/pet/PetRive'
 import { usePetStatus } from '@/hooks/usePetStatus'
-import { useFocusStore } from '@/stores/focusStore'
-import { EXP_PER_LEVEL } from '@/types/pet'
+import { usePetStore } from '@/stores/petStore'
+import { useRoomStore } from '@/stores/roomStore'
+import { SHOP_ITEMS } from '@/types/shop'
+import { getPetMood } from '@/types/pet'
+
+const { height } = Dimensions.get('window')
 
 export default function HomeScreen() {
-  const { name, level, exp, hp, happiness, coins, gems, moodEmoji, moodText, levelTitle } =
-    usePetStatus()
-  const { currentStreak, lastFocusDate } = useFocusStore()
+  const { name, level, happiness, hp, coins } = usePetStatus()
+  const { updateHappiness } = usePetStore()
+  const { selectedBgColor, selectedBgGradient, placedDecorations } = useRoomStore()
+  const mood = getPetMood(happiness)
+
+  const isLight = isLightColor(selectedBgColor)
+  const textColor = isLight ? '#1A237E' : '#FFFFFF'
+  const textSecondary = isLight ? '#5C6BC0' : '#BBDEFB'
+  const surfaceColor = isLight ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.2)'
+
+  const decorationItems = SHOP_ITEMS.filter(
+    (item) => item.category === 'room' && placedDecorations.includes(item.id)
+  )
+
+  function handlePat() {
+    updateHappiness(1)
+  }
+
+  const background = selectedBgGradient ? (
+    <LinearGradient
+      colors={selectedBgGradient}
+      style={StyleSheet.absoluteFillObject}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    />
+  ) : (
+    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: selectedBgColor }]} />
+  )
 
   return (
-    <SafeAreaView className="flex-1 bg-bg">
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View className="flex-row items-center justify-between px-5 pt-2 pb-1">
-          <Text className="text-white text-lg font-bold">สวัสดี, นาย 👋</Text>
-          <View className="flex-row items-center gap-3">
-            <View className="flex-row items-center gap-1 bg-surface px-3 py-1.5 rounded-full">
-              <Text className="text-base">⭐</Text>
-              <Text className="text-yellow font-bold text-sm">{coins}</Text>
-            </View>
-            <View className="flex-row items-center gap-1 bg-surface px-3 py-1.5 rounded-full">
-              <Text className="text-base">💎</Text>
-              <Text className="text-gem font-bold text-sm">{gems}</Text>
-            </View>
+    <View className="flex-1">
+      {background}
+      <SafeAreaView className="flex-1">
+
+        {/* Top HUD */}
+        <View className="flex-row items-center justify-between px-5 pt-1">
+          <View style={{ backgroundColor: surfaceColor }} className="px-3 py-1.5 rounded-full">
+            <Text style={{ color: textColor }} className="text-xs font-bold">Lv.{level}</Text>
+          </View>
+          <View style={{ backgroundColor: surfaceColor }} className="flex-row items-center gap-1 px-3 py-1.5 rounded-full">
+            <Text className="text-sm">⭐</Text>
+            <Text style={{ color: '#FFD600' }} className="font-bold text-xs">{coins}</Text>
           </View>
         </View>
 
-        {/* Pet Card */}
-        <View className="mx-4 mt-2 bg-surface rounded-3xl px-5 pb-5">
-          <PetAvatar name={name} level={level} happiness={happiness} />
+        {/* Decorations in room */}
+        {decorationItems.length > 0 && (
+          <View className="flex-row flex-wrap px-4 pt-2 gap-2">
+            {decorationItems.map((item) => (
+              <View key={item.id} style={{ backgroundColor: surfaceColor }} className="px-2 py-1 rounded-xl flex-row items-center gap-1">
+                <Text className="text-xl">{item.emoji}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
-          <StatBar
-            label="ความสุข 😊"
-            value={happiness}
-            max={100}
-            color="#5DB347"
+        {/* Pet */}
+        <View className="flex-1 items-center justify-center">
+          <PetRive
+            mood={mood}
+            size={height * 0.42}
+            riveSource="pet_cat"
+            stateMachineName="State Machine 1"
+            onPat={handlePat}
           />
-          <StatBar
-            label="HP ❤️"
-            value={hp}
-            max={100}
-            color="#06B6D4"
-          />
-          <StatBar
-            label="EXP ✨"
-            value={exp}
-            max={EXP_PER_LEVEL}
-            color="#F5C518"
-            showValue
-          />
-        </View>
-
-        {/* Streak */}
-        <View className="mx-4 mt-3 bg-surface rounded-3xl px-4 py-2">
-          <Text className="text-white/60 text-xs text-center mb-1">
-            🔥 Streak {currentStreak} วัน
+          <Text style={{ color: textColor }} className="text-xl font-bold mt-1">{name}</Text>
+          <Text style={{ color: textSecondary }} className="text-xs mt-0.5">
+            {mood === 'happy' ? 'มีความสุข 😊' : mood === 'neutral' ? 'ปกติ 😐' : 'เศร้า 😿'}
           </Text>
-          <StreakDots streak={currentStreak} lastFocusDate={lastFocusDate} />
         </View>
 
-        {/* Quick Actions */}
-        <View className="flex-row gap-3 mx-4 mt-3">
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/focus')}
-            activeOpacity={0.75}
-            className="flex-1 bg-primary rounded-2xl p-4 items-center"
-          >
-            <Text className="text-3xl mb-1">⏱</Text>
-            <Text className="text-white font-bold text-sm">Focus Mode</Text>
-            <Text className="text-primary-light text-xs mt-0.5">วางโทรศัพท์ แล้วรับรางวัล</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/stats')}
-            activeOpacity={0.75}
-            className="flex-1 bg-surface border border-white/10 rounded-2xl p-4 items-center"
-          >
-            <Text className="text-3xl mb-1">📊</Text>
-            <Text className="text-white font-bold text-sm">สถิติ</Text>
-            <Text className="text-text-secondary text-xs mt-0.5">ดูรายงานการใช้งาน</Text>
-          </TouchableOpacity>
+        {/* Stat bars */}
+        <View className="mx-6 mb-4 gap-2">
+          <StatRow emoji="😊" value={happiness} color="#4CAF50" trackColor={isLight ? '#E0E0E0' : 'rgba(255,255,255,0.15)'} textColor={textColor} />
+          <StatRow emoji="❤️" value={hp} color="#F44336" trackColor={isLight ? '#E0E0E0' : 'rgba(255,255,255,0.15)'} textColor={textColor} />
         </View>
 
-        {/* Daily Quests Banner */}
-        <View className="mx-4 mt-3 bg-orange/10 border border-orange/30 rounded-2xl p-4">
-          <View className="flex-row items-center gap-2 mb-1">
-            <Text className="text-lg">🎯</Text>
-            <Text className="text-orange font-semibold text-sm">ภารกิจวันนี้</Text>
-          </View>
-          <Text className="text-white/70 text-xs">โฟกัส 1 ชั่วโมง • ไม่เล่นก่อนนอน 30 นาที</Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+
+      </SafeAreaView>
+    </View>
   )
 }
+
+function isLightColor(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.5
+}
+
+function StatRow({ emoji, value, color, trackColor, textColor }: {
+  emoji: string; value: number; color: string; trackColor: string; textColor: string
+}) {
+  return (
+    <View className="flex-row items-center gap-2">
+      <Text className="text-sm w-5">{emoji}</Text>
+      <View style={{ backgroundColor: trackColor }} className="flex-1 h-2 rounded-full overflow-hidden">
+        <View style={{ width: `${value}%`, backgroundColor: color }} className="h-full rounded-full" />
+      </View>
+      <Text style={{ color: textColor }} className="text-xs w-8 text-right">{value}</Text>
+    </View>
+  )
+}
+

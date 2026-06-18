@@ -9,15 +9,12 @@ interface PetState {
   hp: number
   happiness: number
   coins: number
-  gems: number
   equippedItems: string[]
   // Actions
   addExp: (amount: number) => void
   updateHappiness: (delta: number) => void
   addCoins: (amount: number) => void
   spendCoins: (amount: number) => boolean
-  addGems: (amount: number) => void
-  spendGems: (amount: number) => boolean
   equipItem: (itemId: string) => void
   setPetName: (name: string) => void
   setFromFirestore: (data: Partial<PetState>) => void
@@ -30,8 +27,7 @@ export const usePetStore = create<PetState>((set, get) => ({
   exp: 0,
   hp: 100,
   happiness: 80,
-  coins: 0,
-  gems: 0,
+  coins: 10000,
   equippedItems: [],
 
   addExp: (amount) =>
@@ -57,16 +53,6 @@ export const usePetStore = create<PetState>((set, get) => ({
     const { coins } = get()
     if (coins < amount) return false
     set((state) => ({ coins: state.coins - amount }))
-    return true
-  },
-
-  addGems: (amount) =>
-    set((state) => ({ gems: state.gems + amount })),
-
-  spendGems: (amount) => {
-    const { gems } = get()
-    if (gems < amount) return false
-    set((state) => ({ gems: state.gems - amount }))
     return true
   },
 

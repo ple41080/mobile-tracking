@@ -1,52 +1,63 @@
-import { AppState, AppStateStatus } from 'react-native'
+import { NativeModules, NativeEventEmitter, Platform } from 'react-native'
 
-let appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null
-let timerInterval: ReturnType<typeof setInterval> | null = null
+const { AppBlockModule } = NativeModules
+const emitter = AppBlockModule ? new NativeEventEmitter(AppBlockModule) : null
+
+let tickSub: ReturnType<NonNullable<typeof emitter>['addListener']> | null = null
+let blockSub: ReturnType<NonNullable<typeof emitter>['addListener']> | null = null
+let jsInterval: ReturnType<typeof setInterval> | null = null
 let onTickCallback: (() => void) | null = null
 let onFailCallback: (() => void) | null = null
 let onCompleteCallback: (() => void) | null = null
-let didLeaveApp = false
 
-export function startFocusTimer(
+export async function startFocusTimer(
   onTick: () => void,
   onFail: () => void,
-  onComplete: () => void
+  onComplete: () => void,
+  blockedPackages: string[] = [],
+  totalSeconds: number = 1800
 ) {
-  didLeaveApp = false
   onTickCallback = onTick
   onFailCallback = onFail
   onCompleteCallback = onComplete
 
-  appStateSubscription = AppState.addEventListener('change', handleAppStateChange)
+  if (Platform.OS === 'android' && AppBlockModule && emitter) {
+    await AppBlockModule.startBlocking(blockedPackages)
+    await AppBlockModule.startFocusService(totalSeconds)
 
-  timerInterval = setInterval(() => {
-    if (onTickCallback) onTickCallback()
-  }, 1000)
-}
+    tickSub = emitter.addListener('onFocusTick', () => {
+      onTickCallback?.()
+    })
 
-function handleAppStateChange(state: AppStateStatus) {
-  if (state === 'background' || state === 'inactive') {
-    didLeaveApp = true
-  }
-  if (state === 'active' && didLeaveApp) {
-    stopFocusTimer()
-    if (onFailCallback) onFailCallback()
-    didLeaveApp = false
-  }
-}
-
-export function stopFocusTimer() {
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
-  if (appStateSubscription) {
-    appStateSubscription.remove()
-    appStateSubscription = null
+    blockSub = emitter.addListener('onBlockedAppDetected', () => {
+      stopFocusTimer()
+      onFailCallback?.()
+    })
+  } else {
+    jsInterval = setInterval(() => {
+      onTickCallback?.()
+    }, 1000)
   }
 }
 
-export function signalComplete() {
-  stopFocusTimer()
-  if (onCompleteCallback) onCompleteCallback()
+export async function stopFocusTimer() {
+  tickSub?.remove()
+  blockSub?.remove()
+  tickSub = null
+  blockSub = null
+
+  if (jsInterval) {
+    clearInterval(jsInterval)
+    jsInterval = null
+  }
+
+  if (Platform.OS === 'android' && AppBlockModule) {
+    await AppBlockModule.stopFocusService().catch(() => {})
+    await AppBlockModule.stopBlocking().catch(() => {})
+  }
+}
+
+export async function signalComplete() {
+  await stopFocusTimer()
+  onCompleteCallback?.()
 }

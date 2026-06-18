@@ -1,49 +1,52 @@
 import { Platform, NativeModules } from 'react-native'
 import { AppUsage } from '@/types/focus'
 
-const { UsageStatsModule } = NativeModules
+const { AppBlockModule } = NativeModules
+
+function mergeAppUsage(apps: AppUsage[]): AppUsage[] {
+  const byPackage = new Map<string, AppUsage>()
+  for (const app of apps) {
+    const existing = byPackage.get(app.packageName)
+    if (existing) {
+      existing.minutes += app.minutes
+    } else {
+      byPackage.set(app.packageName, { ...app })
+    }
+  }
+  return [...byPackage.values()].sort((a, b) => b.minutes - a.minutes)
+}
 
 export async function checkUsageStatsPermission(): Promise<boolean> {
-  if (Platform.OS !== 'android') return false
+  if (Platform.OS !== 'android' || !AppBlockModule) return false
   try {
-    return await UsageStatsModule?.hasPermission?.() ?? false
+    return await AppBlockModule.isUsageAccessEnabled()
   } catch {
     return false
   }
 }
 
 export async function requestUsageStatsPermission(): Promise<void> {
-  if (Platform.OS !== 'android') return
+  if (Platform.OS !== 'android' || !AppBlockModule) return
   try {
-    await UsageStatsModule?.requestPermission?.()
+    await AppBlockModule.openUsageAccessSettings()
   } catch {
-    // User must grant manually in Settings
+    // ignore
   }
 }
 
 export async function getTodayAppUsage(): Promise<AppUsage[]> {
-  if (Platform.OS !== 'android') return getMockUsageData()
+  if (Platform.OS !== 'android' || !AppBlockModule) return []
   try {
     const hasPermission = await checkUsageStatsPermission()
     if (!hasPermission) return []
-    const raw = await UsageStatsModule?.getTodayUsage?.()
-    return raw ?? []
+    const raw: AppUsage[] = await AppBlockModule.getTodayUsage()
+    return mergeAppUsage(raw ?? [])
   } catch {
-    return getMockUsageData()
+    return []
   }
 }
 
 export async function getTotalScreenTimeToday(): Promise<number> {
   const apps = await getTodayAppUsage()
   return apps.reduce((sum, app) => sum + app.minutes, 0)
-}
-
-function getMockUsageData(): AppUsage[] {
-  return [
-    { name: 'TikTok', packageName: 'com.zhiliaoapp.musically', minutes: 45 },
-    { name: 'YouTube', packageName: 'com.google.android.youtube', minutes: 30 },
-    { name: 'Instagram', packageName: 'com.instagram.android', minutes: 20 },
-    { name: 'LINE', packageName: 'jp.naver.line.android', minutes: 15 },
-    { name: 'Chrome', packageName: 'com.android.chrome', minutes: 12 },
-  ]
 }
