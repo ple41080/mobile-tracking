@@ -10,41 +10,109 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v56.0.0/ before 
 
 แอปช่วยลดเวลาใช้มือถือสำหรับนักเรียน โดยใช้สัตว์เลี้ยงเสมือนเป็นแรงจูงใจ (เสริมแรงเชิงบวก) ทำ Focus session → สัตว์เลี้ยงมีความสุข + ได้เหรียญ/EXP ไปแต่งตัว/ตกแต่งห้อง
 
-- **Stack:** Expo SDK 52 (RN 0.76), expo-router, NativeWind (Tailwind), Zustand, Firebase, Rive
-- **ต้องใช้ dev client** (`npx expo run:android`) เพราะมี native module `AppBlockModule` + Rive — ใช้ Expo Go ไม่ได้
+- **Stack:** Expo SDK 52 (RN 0.76), expo-router, NativeWind (Tailwind), Zustand, Firebase (AI tip), **Supabase** (register + sync), Rive
+- **ต้องใช้ dev client** (`npx expo run:android`) — **ห้ามใช้ Expo Go** เพราะมี native modules: `AppBlockModule`, Rive, ML Kit, TFLite, expo-camera
 - **แพลตฟอร์มหลัก:** Android (block แอป / usage stats ทำงานเฉพาะ Android)
 
+## วิธีรัน (สำคัญ)
+
+```bash
+cd pet-focus
+npm start              # auto: adb reverse + localhost (USB/emulator) หรือ LAN (Wi‑Fi)
+npm run start:tunnel   # ถ้า Wi‑Fi ต่อไม่ได้
+npm run android        # build dev client ครั้งแรก
+```
+
+- **ห้ามใช้** `npx expo start` ตรงๆ — จะได้ LAN IP `192.168.x.x` ที่ emulator/USB มักเข้าไม่ได้
+- **Emulator / USB:** ใช้ `npm start` (รัน `adb reverse` ให้อัตโนมัติ)
+- **มือถือจริง (Wi‑Fi อย่างเดียว):** `npm start` หรือ `npm run start:tunnel`
+- โมเดลใบหน้า: `assets/models/mobile_face_net.tflite` (ต้องเป็นไฟล์ binary จริง ไม่ใช่ HTML)
+- Rive: แมว → `pet_cat.riv`; หมา → `pet_dog_and_cat.riv` (input `cat/dog=true`)
+
 ## โครงสร้างหน้า (app/(tabs)/)
-- `index.tsx` — หน้า Home: แสดงสัตว์เลี้ยง (Rive), HUD เหรียญ ⭐ + Lv, stat bar (happiness/hp), ของตกแต่งห้อง, แตะสัตว์เพื่อเพิ่ม happiness
+- `index.tsx` — หน้า Home: สัตว์เลี้ยง (Rive), HUD, stat bar, ของตกแต่ง, **แตะชื่อเปลี่ยนชื่อ**, **sidebar สลับสัตว์** (`PetSwitcherSidebar`)
 - `focus.tsx` — Focus Mode: เลือกเวลา, timer ring, เริ่ม/ยกเลิก, modal สำเร็จ + **mood check-in**, modal fail (เชิงบวก)
-- `shop.tsx` — ร้านค้า: ซื้อด้วยเหรียญ ⭐ อย่างเดียว, แบ่งหมวด (แต่งตัว/พื้นหลัง/ตกแต่ง/สัตว์), modal ยืนยันซื้อ
-- `stats.tsx` — สถิติ: screen time วันนี้, streak, **การ์ดสรุปสัปดาห์ (sessions/เวลาโฟกัส/อารมณ์เฉลี่ย)**, AI tip, กราฟแอปที่ใช้มากสุด
+- `quests.tsx` — **เควสทำงานบ้าน**: ถ่ายรูป in-app หรือเลือกจากคลัง → ML Kit ตรวจ label + เทียบใบหน้า (local) → รับเหรียญ, ไม่เก็บรูป; แบนเนอร์ลงทะเบียนใบหน้าถ้ายังไม่ enroll
+- `shop.tsx` — ร้านค้า: ซื้อด้วยเหรียญ ⭐; แท็บสัตว์ → ซื้อหมา (`pet_dog` 500 coins) และสลับ active pet
+- `stats.tsx` — สถิติ: screen time วันนี้, streak, สรุปสัปดาห์, AI tip, กราฟแอป, **ลงทะเบียนใบหน้าใหม่**
+
+## Onboarding (app/onboarding/)
+- `student-register.tsx` — **ครั้งแรก**: ใส่รหัสนักเรียน → Supabase anonymous auth + RPC `register_student` (1 รหัส = 1 เครื่อง) → เข้า tabs ทันที; UI ใช้ `bg-background` + `text-white`/`text-white/60` (เหมือน tabs)
+- `face-enroll.tsx` — ลงทะเบียนใบหน้า (**ไม่บังคับ**): เปิดจากหน้าเควสหรือ Stats; ML Kit + MobileFaceNet → SecureStore (ไม่เก็บรูป); มี skip + `returnTo=quests`
+
+## UI theme (NativeWind)
+- `tailwind.config.js` — สีหลัก: `background`/`bg` `#0F2820`, `surface` `#1A3D2E`, `accent` `#FFC94D`, `text-secondary` `#FAE7CB`; หน้า tabs ใช้ `ThemedScreen` (runtime จาก `roomStore`)
+
+## Navigation / Auth gate
+- `app/_layout.tsx` — Root Stack + `IdentityGate`
+- `IdentityGate` — flow: `!isRegistered` → student-register → tabs; restore session จาก Supabase; flush sync queue; **ไม่บังคับ** face-enroll
 
 ## Stores (Zustand, src/stores/)
-- `petStore` — name/level/exp/hp/happiness/**coins** (ไม่มี gems แล้ว), equippedItems; `addCoins/spendCoins/addExp/updateHappiness/equipItem`
-- `focusStore` — สถานะ session, timer, streak, totalFocusMinutes, **moodLog (persist ลง AsyncStorage)**; helper `getCoinsForDuration`, `getWeeklySummary`
-- `shopStore` — แค่ activeCategory (ลบ Gacha logic แล้ว)
+- `petStore` — name/level/exp/hp/happiness/coins, `activePetId`, `species`, equippedItems; `setActivePet/setPetName/...`; **persist** `name`, `activePetId`, `species` (`pet-storage`)
+- `userStore` — `studentId`, `isRegistered` (**persist**), ownedItems; `setRegistered(studentId)`
+- `focusStore` — สถานะ session (`idle`/`in_progress`/`completed`/`failed`), `isPaused`, timer, streak, totalFocusMinutes, **moodLog (persist AsyncStorage)**; helper `getCoinsForDuration`, `getWeeklySummary`
+- `choreQuestStore` — สถานะเควสทำงานบ้านรายวัน (completedAt, retryCount), daily reset, ให้ coins ตอน complete
+- `identityStore` — `faceEnrolled` flag (AsyncStorage) + sync กับ SecureStore embedding
+- `shopStore` — activeCategory
 - `roomStore` — พื้นหลัง/สี theme/ของตกแต่งที่วาง
-- `userStore` — profile/login/ownedItems/achievements
 
 ## Hooks (src/hooks/)
-- `useFocusSession` — คุม flow โฟกัส: start/complete/fail, ให้รางวัล (coin + EXP + happiness+10) ตอนสำเร็จ; **fail ไม่มี penalty** (เสริมแรงบวก)
+- `useFocusSession` — คุม flow โฟกัส: ขอสิทธิ์แจ้งเตือน + Usage Access → start/complete/fail/pause/resume; native events `onFocusTick`, `onFocusPaused`, `onFocusResumed`, `onBlockedAppDetected`, `onFocusComplete`; ให้รางวัลตอนสำเร็จ; **fail ไม่มี penalty**
 - `usePetStatus`, `useScreenTime`, `useDailyQuest`, `useAppTheme`
 
 ## Services (src/services/)
-- `appBlock.ts`, `focusTimer.ts` — เรียก native `AppBlockModule` (block แอป, focus service)
-- `usageStats.ts` — ดึง usage จาก native, **merge ตาม packageName + sort** (กัน key ซ้ำ/นับซ้ำ)
-- `firebase/` — config, auth, firestore (pet/wallet[coins]/focusSessions/dailyStats/streak), functions (AI tip)
+- `appBlock.ts`, `focusTimer.ts` — เรียก native `AppBlockModule` / `FocusForegroundService` (pause/resume/fail ตาม foreground app); Android ใช้ `FocusForegroundService` (FGS) นับถอยหลัง + แสดง notification ขณะเบื้องหลัง; fallback JS `setInterval` ถ้า native ล้ม
+- `permissions.ts` — ขอสิทธิ์แจ้งเตือน (Android 13+) สำหรับ notification นับถอยหลัง; เปิด Settings ได้จาก Stats
+- `usageStats.ts` — Usage Access + ดึง screen time ผ่าน `AppBlockModule`
+- `faceVerifier.ts` — enroll/verify ใบหน้า (ML Kit + MobileFaceNet TFLite), embedding ใน SecureStore; enroll ต้องใบหน้าใหญ่ (~25% กว้างภาพ), verify เควสยอมเล็กกว่า (~8%) เพื่อเห็นงานบ้านในภาพ
+- `photoFreshness.ts` — ตรวจ EXIF วันที่ถ่าย (เลือกจากคลังต้องเป็นวันนี้); ถ่ายในแอปไม่ต้องเช็ค
+- `choreVerifier.ts` — ตรวจเควส: verifyFace + ML Kit image labeling (log label ใน console/`__DEV__` alert); `expectedLabels` ปรับตาม label จริงที่ ML Kit คืน (เช่น room+chair ไม่ใช่ broom)
+- `firebase/` — config, functions (AI tip เท่านั้น)
+- `supabase/` — `client.ts`, `register.ts` (anon auth + RPC), `sync.ts` (focus/daily_usage/chore + offline queue)
+
+## Admin Web (`admin-web/`)
+- Next.js App Router + Supabase SSR
+- `/login` — admin **username**/password (map ไป auth email ผ่าน RPC `lookup_admin_email`)
+- `/` — dashboard สรุปนักเรียน / focus วันนี้ / screen time
+- `/students`, `/students/[id]` — รายละเอียด focus, screen time 7 วัน, chore
+- ตั้งค่า: ดู [`supabase/README.md`](../supabase/README.md); env จาก `.env.local.example`
+
+## Components สำคัญ
+- `PetRive` — แสดง Rive ตาม `species` (cat/dog)
+- `PetSwitcherSidebar` — ปุ่มลอยขวา Home สลับสัตว์; หมาต้องซื้อก่อน
+- `PetNameEditor` — แตะชื่อบน Home → Modal แก้ชื่อ (trim, 1–12 ตัวอักษร) → `setPetName`
+- `ChoreQuestList` — UI เควส + ถ่ายรูป (`CameraCaptureModal`) / เลือกจากคลัง; gate ต้อง enroll ใบหน้าก่อน
+- `CameraCaptureModal` — กล้อง in-app + preview; ปุ่ม「ตั้งค่า」: กลับด้านภาพ / เสียงชัตเตอร์ (persist `cameraSettingsStore`); `shutterSound: false` + `animateShutter` ตามการตั้งค่า
+- `IdentityGate` — บังคับเฉพาะ student-register ก่อนเข้าแอป
 
 ## Features สำคัญ + logic
-1. **Focus session** — เลือก 30/60/120/180 นาที, native block TikTok/IG/FB; สำเร็จ → coin (ตาม `FOCUS_REWARDS`) + EXP (coin×2) + happiness+10
-2. **Mood check-in** (`MoodCheckIn.tsx`) — หลังโฟกัสสำเร็จ เลือกอารมณ์ 1-5 (`MOOD_OPTIONS`), บันทึกลง `moodLog` พร้อม date+minutes, ข้ามได้
-3. **Weekly summary** — `getWeeklySummary()` คำนวณ sessions/เวลาโฟกัส/อารมณ์เฉลี่ย 7 วันล่าสุดจาก moodLog → แสดงใน Stats
-4. **ร้านค้า** — ซื้อด้วยเหรียญอย่างเดียว, owned → สวม/วาง/ตั้ง theme; **ไม่มี Gacha, ไม่มีเพชร, ไม่มี rarity tag**
-5. **เสริมแรงเชิงบวก** — fail ไม่ลงโทษ (ไม่หัก happiness), ข้อความให้กำลังใจ
+1. **Focus session** — เลือก 30/60/120/180 นาที; native `FocusForegroundService` นับถอยหลัง + ตรวจ foreground app (UsageStatsManager):
+   - **RUNNING:** นับต่อปกติ (รวมเปิดแอปอื่นที่ไม่อยู่ใน block list, หน้า Home, ปิดหน้าจอ)
+   - **FAILED:** เปิดแอปใน `DEFAULT_BLOCKED_APPS` → หยุด session + แจ้งเตือน "ล้มเหลวในการทำ focus"
+   - ต้องเปิด Usage Access เพื่อตรวจจับแอปที่ห้าม; สำเร็จ → coin + EXP + happiness+10
+2. **Mood check-in** — หลังโฟกัสสำเร็จ บันทึกอารมณ์ลง moodLog
+3. **Weekly summary** — สรุป 7 วันใน Stats
+4. **ร้านค้า** — ซื้อด้วยเหรียญ, owned → สวม/วาง/ตั้ง theme
+5. **เสริมแรงเชิงบวก** — fail ไม่ลงโทษ
+6. **ลงทะเบียนใบหน้า** — **ไม่บังคับ** ตอนเปิดแอป; เปิดจากหน้าเควสหรือ Stats; เก็บ embedding ใน SecureStore ไม่เก็บรูป; re-enroll ได้จาก Stats
+7. **เควสทำงานบ้าน** — 4 เควส (`CHORE_QUESTS` ใน `focus.ts`); ถ่าย in-app หรือเลือกรูปจากคลัง → ต้อง enroll ใบหน้าก่อน + ผ่านทั้งใบหน้า + label งานบ้าน; ลองใหม่ได้ไม่จำกัดจนกว่าจะสำเร็จ; รางวัล coins → `petStore.addCoins`
+8. **เปลี่ยนชื่อสัตว์เลี้ยง** — แตะชื่อบน Home → modal; บันทึกลง `petStore.name` (persist AsyncStorage)
+9. **สัตว์เลี้ยงหลายตัว** — แมว default (`pet_cat`); หมาซื้อในร้าน (`pet_dog`); สลับผ่าน sidebar หรือร้านค้า → `setActivePet` sync `species` + Rive file
+10. **ลงทะเบียนนักเรียน** — 1 รหัส = 1 เครื่อง; ลบแอปแล้วติดตั้งใหม่ + รหัสเดิม + device เดิม → `register_student` restore session (ไม่ error ซ้ำ)
+11. **Supabase sync** — focus session (complete/fail/cancel), daily screen time, chore completion → Postgres; face embedding **ไม่ sync**
+
+## Troubleshooting
+| อาการ | สาเหตุ | แก้ |
+|--------|--------|-----|
+| `Cannot find native module` / `Tflite could not be found` | ใช้ Expo Go หรือ dev client เก่า | `npx expo prebuild --clean && npx expo run:android` |
+| `File resource not found` (Rive) | ใช้ `resourceName` แทน `require(.riv)` | ใช้ `require('../../../assets/rive/pet_cat.riv')` ใน `PetRive` |
+| `Failed to connect to 192.168.x.x:8081` | Emulator เข้า LAN IP ไม่ได้ / Metro ไม่รัน | `adb reverse tcp:8081 tcp:8081` แล้ว `npm run start:android` |
+| Timer ไม่เดินตอนปิดแอป | dev client เก่า / ไม่มี FGS | `npx expo prebuild --clean && npx expo run:android` + อนุญาต Notifications |
+
+| ค้างหน้า loading | AsyncStorage hydrate ช้า/ล้ม | รอ fallback 1.5s หรือ clear app data |
 
 ## ประวัติการเปลี่ยนแปลงล่าสุด
-- ลบระบบ Gacha + สกุลเงินเพชร (gems) ทั้งหมด — เหลือเหรียญ (coin) อย่างเดียว, item ที่เคยใช้ gem เปลี่ยนเป็น coin
-- ลบ rarity tag (ตำนาน/ธรรมดา/หายาก) ออกจากการ์ดสินค้าและ modal ซื้อ
-- แก้ key ซ้ำใน AppUsageChart โดย merge usage ตาม packageName ที่ต้นทาง
-- เพิ่มระบบเสริมแรงบวก: เอา penalty ตอน fail ออก + mood check-in + การ์ดสรุปสัปดาห์ (แนวทาง research-lite)
+- Supabase: ลงทะเบียนรหัสนักเรียน + sync usage + admin-web dashboard
+- เพิ่ม Focus Foreground Service: ขอสิทธิ์แจ้งเตือน + notification นับถอยหลังขณะโฟกัสเบื้องหลัง (`FocusForegroundService.kt`)
+- เพิ่มสุนัข (`pet_dog_and_cat.riv`) + sidebar สลับสัตว์ + ซื้อหมาในร้าน (persist ownedItems/activePetId)
+- เพิ่มระบบเควสทำงานบ้าน + ลงทะเบียนใบหน้า (local-first, ML Kit + MobileFaceNet, ไม่ใช้ Firebase Storage/Firestore)

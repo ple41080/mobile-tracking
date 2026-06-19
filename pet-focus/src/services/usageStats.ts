@@ -1,4 +1,5 @@
-import { Platform, NativeModules } from 'react-native'
+import { Platform, NativeModules, Linking, Alert } from 'react-native'
+import { normalizeAppUsage } from '@shared/appLabels'
 import { AppUsage } from '@/types/focus'
 
 const { AppBlockModule } = NativeModules
@@ -17,7 +18,7 @@ function mergeAppUsage(apps: AppUsage[]): AppUsage[] {
 }
 
 export async function checkUsageStatsPermission(): Promise<boolean> {
-  if (Platform.OS !== 'android' || !AppBlockModule) return false
+  if (Platform.OS !== 'android' || !AppBlockModule?.isUsageAccessEnabled) return false
   try {
     return await AppBlockModule.isUsageAccessEnabled()
   } catch {
@@ -26,21 +27,34 @@ export async function checkUsageStatsPermission(): Promise<boolean> {
 }
 
 export async function requestUsageStatsPermission(): Promise<void> {
-  if (Platform.OS !== 'android' || !AppBlockModule) return
-  try {
-    await AppBlockModule.openUsageAccessSettings()
-  } catch {
-    // ignore
+  if (Platform.OS !== 'android') return
+
+  if (AppBlockModule?.openUsageAccessSettings) {
+    try {
+      await AppBlockModule.openUsageAccessSettings()
+      return
+    } catch {
+      // fall through
+    }
   }
+
+  Alert.alert(
+    'เปิด Usage Access',
+    'ไปที่ Settings → Apps → Special app access → Usage access แล้วเปิดให้ pet-focus',
+    [
+      { text: 'ยกเลิก', style: 'cancel' },
+      { text: 'ไปที่ Settings', onPress: () => Linking.openSettings() },
+    ]
+  )
 }
 
 export async function getTodayAppUsage(): Promise<AppUsage[]> {
-  if (Platform.OS !== 'android' || !AppBlockModule) return []
+  if (Platform.OS !== 'android' || !AppBlockModule?.getTodayUsage) return []
   try {
     const hasPermission = await checkUsageStatsPermission()
     if (!hasPermission) return []
     const raw: AppUsage[] = await AppBlockModule.getTodayUsage()
-    return mergeAppUsage(raw ?? [])
+    return normalizeAppUsage(mergeAppUsage(raw ?? []))
   } catch {
     return []
   }

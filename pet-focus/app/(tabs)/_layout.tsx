@@ -49,6 +49,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="quests"
+        options={{
+          title: 'เควส',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="✅" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="stats"
         options={{
           title: 'สถิติ',

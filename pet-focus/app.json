@@ -18,7 +18,13 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.petfocus"
+      "package": "com.anonymous.petfocus",
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.PACKAGE_USAGE_STATS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_SPECIAL_USE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -27,7 +33,21 @@
     "plugins": [
       "expo-router",
       "expo-splash-screen",
-      "./plugins/withAndroidBuildFix"
+      "./plugins/withAndroidBuildFix",
+      "./plugins/withAppBlockModule",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Pet Focus to use the camera for face enrollment and chore verification."
+        }
+      ],
+      [
+        "react-native-fast-tflite",
+        {
+          "enableAndroidGpuLibraries": true
+        }
+      ]
     ],
     "extra": {
       "router": {

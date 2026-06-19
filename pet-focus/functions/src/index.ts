@@ -93,27 +93,28 @@ export const dailyPetUpdate = functions.pubsub
 
 export const generateAITip = functions
   .region('asia-southeast1')
-  .https.onCall((data: { todayStats: DayStats; yesterdayStats: DayStats }) => {
+  .https.onCall((data: { todayStats: DayStats; yesterdayStats: DayStats; petName?: string }) => {
     const { todayStats, yesterdayStats } = data
+    const petName = data.petName?.trim() || 'น้องแมว'
     const diff = todayStats.totalScreenTime - yesterdayStats.totalScreenTime
 
     if (diff > 30) {
       return {
-        tip: `วันนี้ใช้โทรศัพท์มากกว่าเมื่อวาน ${diff} นาที ลองตั้งเป้าลดลงอีก 20 นาทีพรุ่งนี้ไหม? โปโป้จะยิ้มแน่เลย! 🐱`,
+        tip: `วันนี้ใช้โทรศัพท์มากกว่าเมื่อวาน ${diff} นาที ลองตั้งเป้าลดลงอีก 20 นาทีพรุ่งนี้ไหม? ${petName}จะยิ้มแน่เลย! 🐱`,
       }
     }
     if (todayStats.focusSessionsCompleted > 0) {
       return {
-        tip: `เก่งมากเลย! โฟกัสไปแล้ว ${todayStats.focusSessionsCompleted} session วันนี้ 🎯 โปโป้ภูมิใจในตัวนายมากเลย`,
+        tip: `เก่งมากเลย! โฟกัสไปแล้ว ${todayStats.focusSessionsCompleted} session วันนี้ 🎯 ${petName}ภูมิใจในตัวนายมากเลย`,
       }
     }
     if (todayStats.totalScreenTime > 120) {
       return {
-        tip: `ใช้โทรศัพท์ไปนานพอสมควรแล้ว ลองพักแล้วมาโฟกัสสัก 30 นาทีไหม? โปโป้รอนายอยู่! 💪`,
+        tip: `ใช้โทรศัพท์ไปนานพอสมควรแล้ว ลองพักแล้วมาโฟกัสสัก 30 นาทีไหม? ${petName}รอนายอยู่! 💪`,
       }
     }
     return {
-      tip: `วันนี้เป็นวันที่ดี ลองทำ Focus session สั้นๆ สัก 30 นาทีไหม? โปโป้จะมีความสุขมากเลย! 🌟`,
+      tip: `วันนี้เป็นวันที่ดี ลองทำ Focus session สั้นๆ สัก 30 นาทีไหม? ${petName}จะมีความสุขมากเลย! 🌟`,
     }
   })
 

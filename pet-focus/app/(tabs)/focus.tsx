@@ -12,7 +12,7 @@ import { getCoinsForDuration, useFocusStore } from '@/stores/focusStore'
 import { MoodValue } from '@/types/focus'
 
 export default function FocusScreen() {
-  const { status, selectedMinutes, remainingSeconds, begin, cancel, reset, selectDuration } =
+  const { status, isPaused, selectedMinutes, remainingSeconds, begin, cancel, reset, selectDuration } =
     useFocusSession()
   const { name } = usePetStatus()
   const { surface } = useAppTheme()
@@ -51,6 +51,7 @@ export default function FocusScreen() {
             remainingSeconds={remainingSeconds}
             totalSeconds={selectedMinutes * 60}
             size={220}
+            isPaused={isPaused}
           />
         </View>
 

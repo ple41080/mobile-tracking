@@ -1,42 +1,53 @@
 import { useEffect } from 'react'
-import { Alert, Linking, Platform } from 'react-native'
+import { Alert, Platform } from 'react-native'
 import { useFocusStore, getCoinsForDuration } from '@/stores/focusStore'
 import { usePetStore } from '@/stores/petStore'
 import { startFocusTimer, stopFocusTimer } from '@/services/focusTimer'
+import { requestUsageStatsPermission, checkUsageStatsPermission } from '@/services/usageStats'
+import { requestNotificationPermission } from '@/services/permissions'
+import { syncFocusSession } from '@/services/supabase/sync'
+
 import { DEFAULT_BLOCKED_APPS } from '@/types/focus'
 
-const { NativeModules } = require('react-native')
-const { AppBlockModule } = NativeModules
-
-async function checkAndPromptUsageAccess(): Promise<void> {
-  if (Platform.OS !== 'android' || !AppBlockModule) return
+async function checkAndPromptUsageAccess(): Promise<boolean> {
+  if (Platform.OS !== 'android') return true
   try {
-    const enabled = await AppBlockModule.isUsageAccessEnabled()
+    const enabled = await checkUsageStatsPermission()
     if (!enabled) {
-      Alert.alert(
-        'แนะนำ: เปิด Usage Access',
-        'หากต้องการให้ Focus Mode ตรวจจับแอปที่ห้ามเปิด กรุณาเปิด "Usage Access" ให้ pet-focus\n\nSettings → Apps → Special app access → Usage access\n\n(ข้ามได้ — Focus Mode ยังทำงานปกติ)',
-        [
-          { text: 'ข้าม', style: 'cancel' },
-          {
-            text: 'ไปที่ Settings',
-            onPress: () => AppBlockModule.openUsageAccessSettings(),
-          },
-        ]
-      )
+      return new Promise((resolve) => {
+        Alert.alert(
+          'ต้องการ Usage Access',
+          'เพื่อตรวจจับแอปที่ห้ามใช้ระหว่างโฟกัส (TikTok, IG ฯลฯ) กรุณาเปิด "Usage access" ให้ pet-focus',
+          [
+            { text: 'ยกเลิก', style: 'cancel', onPress: () => resolve(false) },
+            {
+              text: 'ไปที่ Settings',
+              onPress: async () => {
+                await requestUsageStatsPermission()
+                resolve(false)
+              },
+            },
+          ]
+        )
+      })
     }
+    return true
   } catch {
-    // ignore
+    return false
   }
 }
 
 export function useFocusSession() {
   const {
     status,
+    isPaused,
     selectedMinutes,
     remainingSeconds,
+    sessionStartTime,
     startSession,
     tickSecond,
+    pauseSession,
+    resumeSession,
     completeSession,
     failSession,
     resetSession,
@@ -62,39 +73,76 @@ export function useFocusSession() {
       handleFail,
       handleComplete,
       packages,
-      totalSeconds
+      totalSeconds,
+      () => useFocusStore.getState().pauseSession(),
+      () => useFocusStore.getState().resumeSession()
     )
 
     return () => {
-      stopFocusTimer().catch(() => {})
+      stopFocusTimer().catch(() => { })
     }
   }, [status])
 
   function handleComplete() {
-    stopFocusTimer().catch(() => {})
+    if (useFocusStore.getState().status !== 'in_progress') return
+    stopFocusTimer().catch(() => { })
     const coins = getCoinsForDuration(selectedMinutes)
     addCoins(coins)
     addExp(coins * 2)
     updateHappiness(10)
     completeSession()
+    syncFocusSession({
+      durationMinutes: selectedMinutes,
+      status: 'completed',
+      coinsEarned: coins,
+      startedAt: sessionStartTime,
+    }).catch(() => { })
   }
 
   function handleFail() {
+    if (useFocusStore.getState().status !== 'in_progress') return
+    stopFocusTimer().catch(() => { })
     failSession()
+    syncFocusSession({
+      durationMinutes: selectedMinutes,
+      status: 'failed',
+      coinsEarned: 0,
+      startedAt: sessionStartTime,
+    }).catch(() => { })
   }
 
   async function begin() {
-    checkAndPromptUsageAccess()
+    const granted = await requestNotificationPermission()
+    if (Platform.OS === 'android' && Platform.Version >= 33 && !granted) {
+      Alert.alert(
+        'ต้องการการแจ้งเตือน',
+        'เพื่อแสดงเวลานับถอยหลังขณะโฟกัสเบื้องหลัง กรุณาอนุญาตการแจ้งเตือน',
+        [
+          { text: 'ยกเลิก', style: 'cancel' },
+          { text: 'ลองอีกครั้ง', onPress: () => begin() },
+        ]
+      )
+      return
+    }
+    const usageOk = await checkAndPromptUsageAccess()
+    if (!usageOk) return
     startSession()
   }
 
   function cancel() {
-    stopFocusTimer().catch(() => {})
+    stopFocusTimer().catch(() => { })
+    syncFocusSession({
+      durationMinutes: selectedMinutes,
+      status: 'cancelled',
+      coinsEarned: 0,
+      startedAt: sessionStartTime,
+    }).catch(() => { })
     resetSession()
   }
 
   return {
     status,
+    isPaused,
     selectedMinutes,
     remainingSeconds,
     begin,

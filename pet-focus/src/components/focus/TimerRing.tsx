@@ -6,11 +6,12 @@ interface TimerRingProps {
   remainingSeconds: number
   totalSeconds: number
   size?: number
+  isPaused?: boolean
 }
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
-export function TimerRing({ remainingSeconds, totalSeconds, size = 200 }: TimerRingProps) {
+export function TimerRing({ remainingSeconds, totalSeconds, size = 200, isPaused = false }: TimerRingProps) {
   const radius = (size - 20) / 2
   const circumference = 2 * Math.PI * radius
   const progress = remainingSeconds / totalSeconds
@@ -55,7 +56,7 @@ export function TimerRing({ remainingSeconds, totalSeconds, size = 200 }: TimerR
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#5DB347"
+          stroke={isPaused ? '#F5A623' : '#5DB347'}
           strokeWidth={8}
           fill="transparent"
           strokeDasharray={circumference}
@@ -68,7 +69,7 @@ export function TimerRing({ remainingSeconds, totalSeconds, size = 200 }: TimerR
       <View className="absolute items-center">
         <Text className="text-white text-4xl font-bold tracking-wider">{timeLabel}</Text>
         <Text className="text-text-secondary text-xs mt-1">
-          {progress === 1 ? 'พร้อมเริ่ม' : 'กำลังโฟกัส...'}
+          {isPaused ? 'หยุดชั่วคราว ⏸' : progress === 1 ? 'พร้อมเริ่ม' : 'กำลังโฟกัส...'}
         </Text>
       </View>
     </Animated.View>

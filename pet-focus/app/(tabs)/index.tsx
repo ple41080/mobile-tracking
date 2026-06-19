@@ -3,6 +3,8 @@ import { View, Text, Dimensions, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { PetRive } from '@/components/pet/PetRive'
+import { PetNameEditor } from '@/components/pet/PetNameEditor'
+import { PetSwitcherSidebar } from '@/components/pet/PetSwitcherSidebar'
 import { usePetStatus } from '@/hooks/usePetStatus'
 import { usePetStore } from '@/stores/petStore'
 import { useRoomStore } from '@/stores/roomStore'
@@ -12,8 +14,8 @@ import { getPetMood } from '@/types/pet'
 const { height } = Dimensions.get('window')
 
 export default function HomeScreen() {
-  const { name, level, happiness, hp, coins } = usePetStatus()
-  const { updateHappiness } = usePetStore()
+  const { name, level, happiness, hp, coins, species } = usePetStatus()
+  const setPetName = usePetStore((s) => s.setPetName)
   const { selectedBgColor, selectedBgGradient, placedDecorations } = useRoomStore()
   const mood = getPetMood(happiness)
 
@@ -25,10 +27,6 @@ export default function HomeScreen() {
   const decorationItems = SHOP_ITEMS.filter(
     (item) => item.category === 'room' && placedDecorations.includes(item.id)
   )
-
-  function handlePat() {
-    updateHappiness(1)
-  }
 
   const background = selectedBgGradient ? (
     <LinearGradient
@@ -69,15 +67,10 @@ export default function HomeScreen() {
         )}
 
         {/* Pet */}
-        <View className="flex-1 items-center justify-center">
-          <PetRive
-            mood={mood}
-            size={height * 0.42}
-            riveSource="pet_cat"
-            stateMachineName="State Machine 1"
-            onPat={handlePat}
-          />
-          <Text style={{ color: textColor }} className="text-xl font-bold mt-1">{name}</Text>
+        <View className="flex-1 items-center justify-center" pointerEvents="box-none">
+          <PetSwitcherSidebar surfaceColor={surfaceColor} textColor={textColor} />
+          <PetRive species={species} size={height * 0.42} />
+          <PetNameEditor name={name} textColor={textColor} onRename={setPetName} />
           <Text style={{ color: textSecondary }} className="text-xs mt-0.5">
             {mood === 'happy' ? 'มีความสุข 😊' : mood === 'neutral' ? 'ปกติ 😐' : 'เศร้า 😿'}
           </Text>

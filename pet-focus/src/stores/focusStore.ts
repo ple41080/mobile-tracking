@@ -5,6 +5,7 @@ import { FocusSessionStatus, FOCUS_REWARDS, MoodValue, MoodEntry } from '@/types
 
 interface FocusState {
   status: FocusSessionStatus
+  isPaused: boolean
   selectedMinutes: number
   remainingSeconds: number
   sessionStartTime: Date | null
@@ -17,6 +18,8 @@ interface FocusState {
   selectDuration: (minutes: number) => void
   startSession: () => void
   tickSecond: () => void
+  pauseSession: () => void
+  resumeSession: () => void
   completeSession: () => void
   failSession: () => void
   resetSession: () => void
@@ -28,6 +31,7 @@ export const useFocusStore = create<FocusState>()(
   persist(
     (set) => ({
       status: 'idle',
+      isPaused: false,
       selectedMinutes: 30,
       remainingSeconds: 30 * 60,
       sessionStartTime: null,
@@ -43,28 +47,51 @@ export const useFocusStore = create<FocusState>()(
       startSession: () =>
         set({
           status: 'in_progress',
+          isPaused: false,
           sessionStartTime: new Date(),
         }),
 
       tickSecond: () =>
         set((state) => {
+          if (state.status !== 'in_progress' || state.isPaused) return state
           if (state.remainingSeconds <= 1) {
-            return { remainingSeconds: 0, status: 'completed' }
+            return { remainingSeconds: 0, status: 'completed', isPaused: false }
           }
           return { remainingSeconds: state.remainingSeconds - 1 }
         }),
 
-      completeSession: () =>
-        set((state) => ({
-          status: 'completed',
-          totalFocusMinutes: state.totalFocusMinutes + state.selectedMinutes,
-        })),
+      pauseSession: () =>
+        set((state) => {
+          if (state.status !== 'in_progress') return state
+          return { isPaused: true }
+        }),
 
-      failSession: () => set({ status: 'failed' }),
+      resumeSession: () =>
+        set((state) => {
+          if (state.status !== 'in_progress') return state
+          return { isPaused: false }
+        }),
+
+      completeSession: () =>
+        set((state) => {
+          if (state.status !== 'in_progress' && state.status !== 'completed') return state
+          return {
+            status: 'completed',
+            isPaused: false,
+            totalFocusMinutes: state.totalFocusMinutes + state.selectedMinutes,
+          }
+        }),
+
+      failSession: () =>
+        set((state) => {
+          if (state.status !== 'in_progress') return state
+          return { status: 'failed', isPaused: false }
+        }),
 
       resetSession: () =>
         set((state) => ({
           status: 'idle',
+          isPaused: false,
           remainingSeconds: state.selectedMinutes * 60,
           sessionStartTime: null,
         })),

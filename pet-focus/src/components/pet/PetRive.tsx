@@ -1,6 +1,7 @@
-import React from 'react'
-import { View, Text, TouchableOpacity, NativeModules } from 'react-native'
-import { PetMood } from '@/types/pet'
+import React, { useCallback, useRef } from 'react'
+import { View, NativeModules } from 'react-native'
+import { PetSpecies } from '@/types/pet'
+import { PET_CAT_RIV, PET_DOG_AND_CAT_RIV } from '@/assets/riveAssets'
 
 const isRiveAvailable = !!NativeModules.RiveReactNativeModule
 
@@ -13,66 +14,52 @@ if (isRiveAvailable) {
   }
 }
 
+const STATE_MACHINE = 'State Machine 1'
+const DOG_CAT_INPUT = 'cat/dog'
+
 interface PetRiveProps {
-  mood: PetMood
+  species: PetSpecies
   size?: number
-  riveSource?: number | string
   stateMachineName?: string
-  onPat?: () => void
 }
 
-const MOOD_EMOJI: Record<PetMood, string> = {
-  happy: '🐱',
-  neutral: '😐',
-  sad: '😿',
+function setDogMode(ref: React.RefObject<any>, stateMachineName: string) {
+  try {
+    ref.current?.setInputState(stateMachineName, DOG_CAT_INPUT, true)
+  } catch {
+    // Rive native may not be ready yet
+  }
 }
 
 export function PetRive({
-  mood,
+  species,
   size = 200,
-  riveSource,
-  stateMachineName = 'State Machine 1',
-  onPat,
+  stateMachineName = STATE_MACHINE,
 }: PetRiveProps) {
+  const riveRef = useRef<any>(null)
+  const isDog = species === 'dog'
 
-  function handleStateChanged(stateMachine: string, stateName: string) {
-    if (stateName === 'Pat' || stateName.toLowerCase().includes('pat')) {
-      onPat?.()
-    }
-  }
+  const applyDogInputs = useCallback(() => {
+    setDogMode(riveRef, stateMachineName)
+  }, [stateMachineName])
 
   if (!Rive || !isRiveAvailable) {
-    return (
-      <TouchableOpacity onPress={() => onPat?.()} activeOpacity={0.8}>
-        <EmojiFallback mood={mood} size={size} />
-      </TouchableOpacity>
-    )
+    return <View style={{ width: size, height: size }} />
   }
 
-  const riveProps =
-    typeof riveSource === 'number'
-      ? { source: riveSource }
-      : typeof riveSource === 'string' && riveSource.startsWith('http')
-        ? { url: riveSource }
-        : { resourceName: riveSource ?? 'pet_cat' }
+  const source = isDog ? PET_DOG_AND_CAT_RIV : PET_CAT_RIV
 
   return (
     <View style={{ width: size, height: size }}>
       <Rive
-        {...riveProps}
+        key={species}
+        ref={isDog ? riveRef : undefined}
+        source={source}
         stateMachineName={stateMachineName}
         style={{ width: size, height: size }}
         autoplay
-        onStateChanged={handleStateChanged}
+        onPlay={isDog ? applyDogInputs : undefined}
       />
-    </View>
-  )
-}
-
-function EmojiFallback({ mood, size }: { mood: PetMood; size: number }) {
-  return (
-    <View style={{ width: size, height: size }} className="items-center justify-center">
-      <Text style={{ fontSize: size * 0.55 }}>{MOOD_EMOJI[mood]}</Text>
     </View>
   )
 }

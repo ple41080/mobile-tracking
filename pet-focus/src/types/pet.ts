@@ -1,5 +1,33 @@
 export type PetSpecies = 'cat' | 'dog' | 'rabbit' | 'hamster'
 
+export type PetId = 'pet_cat' | 'pet_dog'
+
+export const DEFAULT_PET_ID: PetId = 'pet_cat'
+export const DEFAULT_PET_NAME = 'น้องแมว'
+
+export interface PetCatalogEntry {
+  id: PetId
+  species: PetSpecies
+  emoji: string
+  name: string
+  requiresPurchase: boolean
+}
+
+export const PET_CATALOG: PetCatalogEntry[] = [
+  { id: 'pet_cat', species: 'cat', emoji: '🐱', name: 'แมว', requiresPurchase: false },
+  { id: 'pet_dog', species: 'dog', emoji: '🐕', name: 'สุนัข', requiresPurchase: true },
+]
+
+export function getPetCatalogEntry(petId: PetId): PetCatalogEntry {
+  return PET_CATALOG.find((p) => p.id === petId) ?? PET_CATALOG[0]
+}
+
+export function isPetOwned(petId: PetId, ownedItems: string[]): boolean {
+  const entry = getPetCatalogEntry(petId)
+  if (!entry.requiresPurchase) return true
+  return ownedItems.includes(petId)
+}
+
 export interface Pet {
   name: string
   species: PetSpecies

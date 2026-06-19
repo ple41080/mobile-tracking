@@ -35,6 +35,7 @@ export interface AppUsage {
   name: string
   packageName: string
   minutes: number
+  iconBase64?: string
 }
 
 export type DailyQuestType = 'focus' | 'screentime_limit' | 'no_phone_before_sleep'
@@ -47,6 +48,114 @@ export interface DailyQuest {
   reward: { coins: number }
   completedAt?: Date
 }
+
+export type ChoreQuest = {
+  id: string
+  title: string
+  description: string
+  expectedLabels: string[]
+  minConfidence: number
+  minLabelMatches: number
+  reward: { coins: number }
+}
+
+export const CHORE_QUESTS: ChoreQuest[] = [
+  {
+    id: 'chore_sweep',
+    title: 'กวาดบ้าน',
+    description: 'ถ่ายรูปขณะกำลังกวาดหรือหลังกวาดเสร็จ ให้เห็นทั้งใบหน้าและงาน',
+    // ML Kit มักไม่ label "broom" — ใช้บริบทในบ้าน (room, chair, curtain, floor tile ฯลฯ)
+    expectedLabels: [
+      'broom',
+      'mop',
+      'sweep',
+      'cleaning',
+      'housekeeping',
+      'floor',
+      'tile',
+      'indoor',
+      'room',
+      'home',
+      'house',
+      'living',
+      'chair',
+      'curtain',
+      'pattern',
+      'furniture',
+    ],
+    minConfidence: 0.5,
+    minLabelMatches: 2,
+    reward: { coins: 15 },
+  },
+  {
+    id: 'chore_dishes',
+    title: 'ล้างจาน',
+    description: 'ถ่ายรูปขณะล้างจานหรือหลังล้างเสร็จ ให้เห็นทั้งใบหน้าและอ่าง/จาน',
+    expectedLabels: [
+      'dish',
+      'dishes',
+      'sink',
+      'faucet',
+      'kitchen',
+      'tableware',
+      'plate',
+      'bowl',
+      'cup',
+      'water',
+      'indoor',
+      'room',
+      'home',
+    ],
+    minConfidence: 0.5,
+    minLabelMatches: 2,
+    reward: { coins: 15 },
+  },
+  {
+    id: 'chore_desk',
+    title: 'จัดโต๊ะเรียน',
+    description: 'ถ่ายรูปโต๊ะเรียนที่จัดเรียบร้อยแล้ว ให้เห็นทั้งใบหน้าและโต๊ะ',
+    expectedLabels: [
+      'desk',
+      'table',
+      'book',
+      'study',
+      'office',
+      'chair',
+      'computer',
+      'laptop',
+      'indoor',
+      'room',
+      'pattern',
+      'curtain',
+      'furniture',
+    ],
+    minConfidence: 0.5,
+    minLabelMatches: 2,
+    reward: { coins: 15 },
+  },
+  {
+    id: 'chore_laundry',
+    title: 'รีดเสื้อผ้า',
+    description: 'ถ่ายรูปขณะรีดเสื้อผ้า ให้เห็นทั้งใบหน้าและเสื้อผ้า/เตารีด',
+    expectedLabels: [
+      'clothing',
+      'clothes',
+      'shirt',
+      'iron',
+      'laundry',
+      'fabric',
+      'textile',
+      'appliance',
+      'indoor',
+      'room',
+      'pattern',
+      'curtain',
+    ],
+    minConfidence: 0.5,
+    minLabelMatches: 2,
+    reward: { coins: 15 },
+  },
+]
 
 export const DAILY_QUESTS: DailyQuest[] = [
   { id: 'focus_60', title: 'โฟกัส 1 ชั่วโมง', target: 60, type: 'focus', reward: { coins: 20 } },

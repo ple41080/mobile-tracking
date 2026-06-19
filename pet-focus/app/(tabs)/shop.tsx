@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { View, Text, TouchableOpacity, Modal, Alert } from 'react-native'
 import { ThemedScreen } from '@/components/ThemedScreen'
 import { useAppTheme } from '@/hooks/useAppTheme'
@@ -8,25 +8,49 @@ import { usePetStore } from '@/stores/petStore'
 import { useUserStore } from '@/stores/userStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { SHOP_ITEMS, ShopItem, ItemCategory } from '@/types/shop'
+import { isPetOwned } from '@/types/pet'
 
 const CATEGORY_TABS: { key: ItemCategory; label: string; emoji: string }[] = [
   { key: 'outfit', label: 'แต่งตัว', emoji: '👗' },
   { key: 'background', label: 'พื้นหลัง', emoji: '🎨' },
-  { key: 'room', label: 'ของตกแต่ง', emoji: '🏠' },
+  // { key: 'room', label: 'ของตกแต่ง', emoji: '🏠' },
   { key: 'pet', label: 'สัตว์', emoji: '🐾' },
 ]
 
 export default function ShopScreen() {
   const { activeCategory, setActiveCategory } = useShopStore()
-  const { coins, spendCoins, equipItem, equippedItems } = usePetStore()
-  const { ownedItems, addOwnedItem } = useUserStore()
+  const { coins, spendCoins, equipItem, equippedItems, setActivePet, activePetId } = usePetStore()
+  const { ownedItems, addOwnedItem, _hasHydrated: userHydrated } = useUserStore()
+  const petHydrated = usePetStore((s) => s._hasHydrated)
+  const storageReady = userHydrated && petHydrated
   const { setBackground, toggleDecoration, selectedBgId, placedDecorations } = useRoomStore()
   const { surface } = useAppTheme()
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null)
 
+  useEffect(() => {
+    const fallback = setTimeout(() => {
+      if (!usePetStore.getState()._hasHydrated) {
+        usePetStore.getState().setHasHydrated(true)
+      }
+      if (!useUserStore.getState()._hasHydrated) {
+        useUserStore.getState().setHasHydrated(true)
+      }
+    }, 1500)
+    return () => clearTimeout(fallback)
+  }, [])
+
   const filteredItems = SHOP_ITEMS.filter((i) => i.category === activeCategory)
 
   function handleItemPress(item: ShopItem) {
+    if (item.category === 'pet' && item.petId) {
+      if (!isPetOwned(item.petId, ownedItems)) {
+        setSelectedItem(item)
+        return
+      }
+      setActivePet(item.petId)
+      return
+    }
+
     if (!ownedItems.includes(item.id)) {
       setSelectedItem(item)
       return
@@ -42,17 +66,42 @@ export default function ShopScreen() {
   }
 
   function handleBuy() {
-    if (!selectedItem) return
-    const { currency, price, id } = selectedItem
+    if (!selectedItem || !storageReady) return
+
+    const { price, id } = selectedItem
+
+    if (selectedItem.category === 'pet' && selectedItem.petId) {
+      if (isPetOwned(selectedItem.petId, ownedItems)) {
+        setActivePet(selectedItem.petId)
+        setSelectedItem(null)
+        return
+      }
+    } else if (ownedItems.includes(id)) {
+      setSelectedItem(null)
+      return
+    }
+
+    if (coins < price) {
+      Alert.alert('⭐ เหรียญไม่พอ', `ต้องการ ${price} ⭐ (มี ${coins} ⭐)`)
+      return
+    }
+
     const success = spendCoins(price)
     if (!success) {
       Alert.alert('⭐ เหรียญไม่พอ', 'ทำ Focus session เพื่อหาเหรียญเพิ่มนะ!')
       setSelectedItem(null)
       return
     }
+
     addOwnedItem(id)
-    // Apply immediately after buying
-    if (selectedItem.category === 'background') {
+    if (selectedItem.petId) {
+      addOwnedItem(selectedItem.petId)
+    }
+
+    if (selectedItem.category === 'pet' && selectedItem.petId) {
+      setActivePet(selectedItem.petId)
+      Alert.alert('สำเร็จ!', `ได้ ${selectedItem.name} แล้ว 🎉`)
+    } else if (selectedItem.category === 'background') {
       setBackground(selectedItem)
     } else if (selectedItem.category === 'room') {
       toggleDecoration(id)
@@ -78,15 +127,13 @@ export default function ShopScreen() {
             <TouchableOpacity
               key={tab.key}
               onPress={() => setActiveCategory(tab.key)}
-              className={`flex-1 py-2 rounded-xl items-center flex-row justify-center gap-1 ${
-                activeCategory === tab.key ? 'bg-primary' : ''
-              }`}
+              className={`flex-1 py-2 rounded-xl items-center flex-row justify-center gap-1 ${activeCategory === tab.key ? 'bg-primary' : ''
+                }`}
             >
               <Text className="text-sm">{tab.emoji}</Text>
               <Text
-                className={`text-xs font-semibold ${
-                  activeCategory === tab.key ? 'text-white' : 'text-text-secondary'
-                }`}
+                className={`text-xs font-semibold ${activeCategory === tab.key ? 'text-white' : 'text-text-secondary'
+                  }`}
               >
                 {tab.label}
               </Text>
@@ -99,6 +146,7 @@ export default function ShopScreen() {
           items={filteredItems}
           ownedItems={ownedItems}
           equippedItems={equippedItems}
+          activePetId={activePetId}
           onItemPress={handleItemPress}
         />
       </View>
@@ -131,10 +179,18 @@ export default function ShopScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleBuy}
-                    className="flex-1 py-3 rounded-xl bg-primary-light items-center"
+                    disabled={!storageReady || coins < (selectedItem?.price ?? 0)}
+                    className={`flex-1 py-3 rounded-xl items-center ${!storageReady || coins < (selectedItem?.price ?? 0)
+                        ? 'bg-primary/40'
+                        : 'bg-primary-light'
+                      }`}
                   >
                     <Text className="text-white font-bold">
-                      ซื้อ {selectedItem.price} ⭐
+                      {!storageReady
+                        ? 'กำลังโหลด...'
+                        : coins < (selectedItem?.price ?? 0)
+                          ? `เหรียญไม่พอ (${coins}/${selectedItem?.price})`
+                          : `ซื้อ ${selectedItem.price} ⭐`}
                     </Text>
                   </TouchableOpacity>
                 </View>

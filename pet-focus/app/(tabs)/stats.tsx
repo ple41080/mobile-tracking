@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native'
 import { ThemedScreen } from '@/components/ThemedScreen'
 import { useAppTheme } from '@/hooks/useAppTheme'
 import { AppUsageChart } from '@/components/stats/AppUsageChart'
@@ -9,16 +9,33 @@ import { useFocusStore, getWeeklySummary } from '@/stores/focusStore'
 import { MOOD_OPTIONS } from '@/types/focus'
 import { generateAITip } from '@/services/firebase/functions'
 import { requestUsageStatsPermission } from '@/services/usageStats'
+import {
+  checkNotificationPermission,
+  requestNotificationPermission,
+} from '@/services/permissions'
 import { DayStats } from '@/types/focus'
+import { useRouter } from 'expo-router'
+import { useIdentityStore } from '@/stores/identityStore'
+import { useCameraSettingsStore } from '@/stores/cameraSettingsStore'
+import { usePetStatus } from '@/hooks/usePetStatus'
 
 type Tab = 'today' | 'week' | 'month'
 
 export default function StatsScreen() {
+  const router = useRouter()
+  const resetEnrollment = useIdentityStore((s) => s.resetEnrollment)
+  const mirrorPreview = useCameraSettingsStore((s) => s.mirrorPreview)
+  const shutterSound = useCameraSettingsStore((s) => s.shutterSound)
+  const setMirrorPreview = useCameraSettingsStore((s) => s.setMirrorPreview)
+  const setShutterSound = useCameraSettingsStore((s) => s.setShutterSound)
   const [activeTab, setActiveTab] = useState<Tab>('today')
   const [aiTip, setAiTip] = useState<string | null>(null)
   const [tipLoading, setTipLoading] = useState(false)
   const { surface, border } = useAppTheme()
 
+  const [notificationGranted, setNotificationGranted] = useState(true)
+
+  const { name: petName } = usePetStatus()
   const { apps, totalMinutes, hasPermission, isLoading } = useScreenTime()
   const { currentStreak, totalFocusMinutes, moodLog } = useFocusStore()
 
@@ -30,6 +47,24 @@ export default function StatsScreen() {
       ? MOOD_OPTIONS[Math.min(4, Math.round(weekly.avgMood) - 1)].emoji
       : '—'
 
+  function handleReEnroll() {
+    Alert.alert(
+      'ลงทะเบียนใบหน้าใหม่',
+      'ข้อมูลใบหน้าเดิมจะถูกลบจากเครื่อง ต้องถ่ายใหม่ก่อนใช้เควสทำงานบ้าน',
+      [
+        { text: 'ยกเลิก', style: 'cancel' },
+        {
+          text: 'ลงทะเบียนใหม่',
+          style: 'destructive',
+          onPress: async () => {
+            await resetEnrollment()
+            router.replace('/onboarding/face-enroll')
+          },
+        },
+      ]
+    )
+  }
+
   const TABS: { key: Tab; label: string }[] = [
     { key: 'today', label: 'วันนี้' },
     { key: 'week', label: 'สัปดาห์' },
@@ -38,7 +73,17 @@ export default function StatsScreen() {
 
   useEffect(() => {
     loadTip()
+    checkNotificationPermission().then(setNotificationGranted)
   }, [])
+
+  async function handleRequestNotification() {
+    const granted = await requestNotificationPermission()
+    setNotificationGranted(granted)
+  }
+
+  async function handleRequestUsageAccess() {
+    await requestUsageStatsPermission()
+  }
 
   async function loadTip() {
     setTipLoading(true)
@@ -50,7 +95,7 @@ export default function StatsScreen() {
       coinsEarned: 0,
       topApps: apps,
     }
-    const tip = await generateAITip(todayStats, todayStats)
+    const tip = await generateAITip(todayStats, todayStats, petName)
     setAiTip(tip)
     setTipLoading(false)
   }
@@ -109,10 +154,23 @@ export default function StatsScreen() {
           </View>
         </View>
 
+        {/* Notification permission */}
+        {!notificationGranted && (
+          <TouchableOpacity
+            onPress={handleRequestNotification}
+            className="bg-primary/10 border border-primary-light/30 rounded-2xl p-4 mb-4"
+          >
+            <Text className="text-primary-light text-sm font-semibold">🔔 ต้องการสิทธิ์แจ้งเตือน</Text>
+            <Text className="text-white/60 text-xs mt-1">
+              กดที่นี่เพื่ออนุญาตการแจ้งเตือน (Focus session)
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {/* Usage permission warning */}
         {!hasPermission && (
           <TouchableOpacity
-            onPress={requestUsageStatsPermission}
+            onPress={handleRequestUsageAccess}
             className="bg-orange/10 border border-orange/30 rounded-2xl p-4 mb-4"
           >
             <Text className="text-orange text-sm font-semibold">⚠️ ต้องการสิทธิ์ Usage Access</Text>
@@ -149,7 +207,7 @@ export default function StatsScreen() {
         </View>
 
         {/* AI Tip */}
-        <AITip tip={aiTip} isLoading={tipLoading} />
+        <AITip petName={petName} tip={aiTip} isLoading={tipLoading} />
 
         {/* App usage chart */}
         <View style={{ backgroundColor: surface }} className="mt-4 rounded-2xl p-4">
@@ -169,6 +227,39 @@ export default function StatsScreen() {
               <Text className="text-yellow text-xl font-bold">{currentStreak}</Text>
               <Text className="text-text-secondary text-xs">วัน Streak</Text>
             </View>
+          </View>
+        </View>
+
+        {/* Face enrollment */}
+        <View style={{ backgroundColor: surface }} className="mt-3 rounded-2xl p-4">
+          <Text className="text-white font-semibold mb-2">ยืนยันตัวตน</Text>
+          <Text className="text-text-secondary text-xs mb-3">
+            ใช้สำหรับเควสทำงานบ้าน — เก็บเฉพาะข้อมูลตัวเลขบนเครื่อง ไม่เก็บรูป
+          </Text>
+          <TouchableOpacity
+            onPress={handleReEnroll}
+            className="rounded-xl py-3 items-center border border-white/20 mb-4"
+          >
+            <Text className="text-white font-semibold text-sm">ลงทะเบียนใบหน้าใหม่</Text>
+          </TouchableOpacity>
+          <Text className="text-text-secondary text-xs mb-2">ตั้งค่ากล้อง (ถ่ายรูป / เควส)</Text>
+          <View className="flex-row items-center justify-between py-2">
+            <Text className="text-white/80 text-sm flex-1 pr-2">กลับด้านภาพ (กล้องหน้า)</Text>
+            <Switch
+              value={mirrorPreview}
+              onValueChange={setMirrorPreview}
+              trackColor={{ false: '#3f4f46', true: '#5DB347' }}
+              thumbColor="#fff"
+            />
+          </View>
+          <View className="flex-row items-center justify-between py-2">
+            <Text className="text-white/80 text-sm flex-1 pr-2">เสียงชัตเตอร์</Text>
+            <Switch
+              value={shutterSound}
+              onValueChange={setShutterSound}
+              trackColor={{ false: '#3f4f46', true: '#5DB347' }}
+              thumbColor="#fff"
+            />
           </View>
         </View>
       </ScrollView>
