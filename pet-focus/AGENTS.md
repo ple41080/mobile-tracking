@@ -27,6 +27,7 @@ npm run android        # build dev client ครั้งแรก
 - **Emulator / USB:** ใช้ `npm start` (รัน `adb reverse` ให้อัตโนมัติ)
 - **มือถือจริง (Wi‑Fi อย่างเดียว):** `npm start` หรือ `npm run start:tunnel`
 - โมเดลใบหน้า: `assets/models/mobile_face_net.tflite` (ต้องเป็นไฟล์ binary จริง ไม่ใช่ HTML)
+- ไอคอนแอป: `assets/icon_pet.png` · Splash/loading: `assets/pet_loading.png`
 - Rive: แมว → `pet_cat.riv`; หมา → `pet_dog_and_cat.riv` (input `cat/dog=true`)
 
 ## โครงสร้างหน้า (app/(tabs)/)
@@ -71,11 +72,11 @@ npm run android        # build dev client ครั้งแรก
 - `supabase/` — `client.ts`, `register.ts` (anon auth + RPC), `sync.ts` (focus/daily_usage/chore + offline queue)
 
 ## Admin Web (`admin-web/`)
-- Next.js App Router + Supabase SSR
+- Next.js App Router + Supabase SSR · deploy บน **Vercel** (Root Directory = `admin-web`)
 - `/login` — admin **username**/password (map ไป auth email ผ่าน RPC `lookup_admin_email`)
 - `/` — dashboard สรุปนักเรียน / focus วันนี้ / screen time
 - `/students`, `/students/[id]` — รายละเอียด focus, screen time 7 วัน, chore
-- ตั้งค่า: ดู [`supabase/README.md`](../supabase/README.md); env จาก `.env.local.example`
+- ตั้งค่า: ดู [`supabase/README.md`](../supabase/README.md) §7 Vercel; env จาก `.env.local.example`
 
 ## Components สำคัญ
 - `PetRive` — แสดง Rive ตาม `species` (cat/dog)

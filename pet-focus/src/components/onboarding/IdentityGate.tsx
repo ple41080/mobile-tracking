@@ -1,11 +1,15 @@
 import React, { useEffect } from 'react'
-import { View, ActivityIndicator, StyleSheet } from 'react-native'
+import { View, Image, StyleSheet } from 'react-native'
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router'
+import * as SplashScreen from 'expo-splash-screen'
+import { APP_LOADING } from '@/assets/appImages'
 import { useIdentityStore } from '@/stores/identityStore'
 import { useUserStore } from '@/stores/userStore'
 import { restoreRegisteredStudent } from '@/services/supabase/register'
 import { flushSyncQueue } from '@/services/supabase/sync'
 import { isSupabaseConfigured } from '@/services/supabase/client'
+
+SplashScreen.preventAutoHideAsync().catch(() => {})
 
 export function IdentityGate({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -60,12 +64,18 @@ export function IdentityGate({ children }: { children: React.ReactNode }) {
     }
   }, [hasHydrated, navigationReady, isRegistered, segments, router])
 
+  useEffect(() => {
+    if (hasHydrated) {
+      SplashScreen.hideAsync().catch(() => {})
+    }
+  }, [hasHydrated])
+
   return (
     <>
       {children}
       {!hasHydrated && (
-        <View style={StyleSheet.absoluteFill} className="bg-background items-center justify-center">
-          <ActivityIndicator color="#FFC94D" size="large" />
+        <View style={StyleSheet.absoluteFill} className="bg-white items-center justify-center px-8">
+          <Image source={APP_LOADING} className="w-64 h-64" resizeMode="contain" />
         </View>
       )}
     </>

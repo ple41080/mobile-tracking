@@ -4,18 +4,21 @@
     "slug": "pet-focus",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon_pet.png",
     "userInterfaceStyle": "dark",
     "scheme": "petfocus",
+    "splash": {
+      "image": "./assets/pet_loading.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/icon_pet.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.petfocus",
@@ -27,12 +30,19 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon_pet.png"
     },
     "newArchEnabled": true,
     "plugins": [
       "expo-router",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/pet_loading.png",
+          "backgroundColor": "#FFFFFF",
+          "imageWidth": 280
+        }
+      ],
       "./plugins/withAndroidBuildFix",
       "./plugins/withAppBlockModule",
       "expo-secure-store",

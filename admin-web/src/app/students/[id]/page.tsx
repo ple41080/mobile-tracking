@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { AdminNav } from '@/components/AdminNav'
 import { AppUsageList } from '@/components/AppUsageList'
 import { requireAdmin } from '@/lib/supabase/server'
+import { resolveChoreQuestLabel } from '@shared/choreQuestLabels'
 
 type AppUsage = { name: string; packageName: string; minutes: number; iconBase64?: string }
 
@@ -195,7 +196,7 @@ function ChoreTable({
         <tbody>
           {rows.map((r, i) => (
             <tr key={i} className="border-t border-slate-800">
-              <td className="px-3 py-2">{r.quest_id}</td>
+              <td className="px-3 py-2">{resolveChoreQuestLabel(r.quest_id)}</td>
               <td className="px-3 py-2">{r.date}</td>
               <td className="px-3 py-2">{r.coins_earned}</td>
             </tr>

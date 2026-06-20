@@ -57,3 +57,31 @@ values (
 
 - Mobile: register student ID → row in `students`
 - Admin: `cd admin-web && npm run dev` → login → dashboard shows counts
+
+## 7. Deploy admin-web (Vercel)
+
+1. Push repo ไป GitHub/GitLab/Bitbucket
+2. [vercel.com/new](https://vercel.com/new) → Import repo
+3. **Root Directory** = `admin-web` (สำคัญ — โฟลเดอร์ `shared/` อยู่ระดับ repo root)
+4. Environment Variables (Production + Preview):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+5. Deploy
+
+### Supabase Auth (หลังได้ URL จริง)
+
+Supabase Dashboard → **Authentication** → **URL Configuration**:
+
+- **Site URL**: `https://YOUR-PROJECT.vercel.app`
+- **Redirect URLs**: เพิ่ม `https://YOUR-PROJECT.vercel.app/**` (และ custom domain ถ้ามี)
+
+### Deploy ด้วย CLI (ทางเลือก)
+
+```bash
+npm i -g vercel
+cd admin-web
+vercel link          # เลือก project / team
+vercel env add NEXT_PUBLIC_SUPABASE_URL production
+vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
+vercel --prod
+```
