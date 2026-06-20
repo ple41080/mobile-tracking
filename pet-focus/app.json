@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "pet-focus",
+    "slug": "pet-focus",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon_pet.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "petfocus",
+    "splash": {
+      "image": "./assets/pet_loading.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/icon_pet.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.petfocus",
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.PACKAGE_USAGE_STATS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_SPECIAL_USE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/icon_pet.png"
+    },
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/pet_loading.png",
+          "backgroundColor": "#FFFFFF",
+          "imageWidth": 280
+        }
+      ],
+      "./plugins/withAndroidBuildFix",
+      "./plugins/withAppBlockModule",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Pet Focus to use the camera for face enrollment and chore verification."
+        }
+      ],
+      [
+        "react-native-fast-tflite",
+        {
+          "enableAndroidGpuLibraries": true
+        }
+      ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "522b6365-d708-4453-bec5-2a83470d3b7c"
+      }
+    }
+  }
+}
