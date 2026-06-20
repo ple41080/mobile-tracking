@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Pet Focus Admin',
-  description: 'Admin dashboard for Pet Focus',
+  title: 'Pet Focus',
+  description: 'แอปช่วยลดเวลาใช้มือถือสำหรับนักเรียน ด้วยสัตว์เลี้ยงเสมือนเป็นแรงจูงใจ',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

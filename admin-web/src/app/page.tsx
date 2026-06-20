@@ -1,88 +1,77 @@
 import Link from 'next/link'
-import { AdminNav } from '@/components/AdminNav'
-import { DashboardCharts } from '@/components/dashboard/DashboardCharts'
-import { buildDashboardChartData, lastNDays } from '@/lib/dashboardStats'
-import { requireAdmin } from '@/lib/supabase/server'
+import { PublicNav } from '@/components/PublicNav'
 
-function todayIsoDate() {
-  return new Date().toISOString().slice(0, 10)
-}
+const features = [
+  {
+    title: 'Focus Mode',
+    description: 'ตั้งเวลาโฟกัส 30–180 นาที สัตว์เลี้ยงมีความสุขและได้เหรียญเมื่อสำเร็จ เปิดแอปที่ห้ามใช้แล้ว session จะล้มเหลว',
+  },
+  {
+    title: 'เควสทำงานบ้าน',
+    description: 'ถ่ายรูปงานบ้านเพื่อรับเหรียญ ตรวจสอบด้วย AI บนเครื่อง ไม่เก็บรูปขึ้น cloud',
+  },
+  {
+    title: 'Screen Time Stats',
+    description: 'ดูเวลาใช้มือถือรายวัน สรุปสัปดาห์ และ AI tip ช่วยปรับพฤติกรรม',
+  },
+  {
+    title: 'สัตว์เลี้ยง & ร้านค้า',
+    description: 'เลี้ยงแมวหรือซื้อหมา แต่งตัวและตกแต่งห้องด้วยเหรียญที่สะสมได้',
+  },
+]
 
-export default async function DashboardPage() {
-  const { supabase, isAdmin } = await requireAdmin()
-  if (!isAdmin) return null
-
-  const today = todayIsoDate()
-  const days = lastNDays(7)
-  const weekStart = days[0]
-
-  const [
-    { count: studentCount },
-    { data: todayFocus },
-    { data: todayUsage },
-    { data: focusSessions7d },
-    { data: dailyUsage7d },
-  ] = await Promise.all([
-    supabase.from('students').select('*', { count: 'exact', head: true }),
-    supabase.from('focus_sessions').select('status, duration_minutes').gte('created_at', `${today}T00:00:00`),
-    supabase.from('daily_usage').select('total_screen_minutes').eq('date', today),
-    supabase
-      .from('focus_sessions')
-      .select('status, duration_minutes, created_at')
-      .gte('created_at', `${weekStart}T00:00:00`),
-    supabase
-      .from('daily_usage')
-      .select('date, total_screen_minutes, focus_minutes, top_apps')
-      .gte('date', weekStart),
-  ])
-
-  const focusRows = todayFocus ?? []
-  const completed = focusRows.filter((r) => r.status === 'completed').length
-  const failed = focusRows.filter((r) => r.status === 'failed').length
-  const focusMinutes = focusRows.reduce((sum, r) => sum + (r.duration_minutes ?? 0), 0)
-  const usageRows = todayUsage ?? []
-  const avgScreen =
-    usageRows.length > 0
-      ? Math.round(
-          usageRows.reduce((sum, r) => sum + (r.total_screen_minutes ?? 0), 0) / usageRows.length
-        )
-      : 0
-
-  const chartData = buildDashboardChartData(days, focusSessions7d ?? [], dailyUsage7d ?? [])
-
+export default function LandingPage() {
   return (
     <>
-      <AdminNav />
-      <main className="max-w-5xl mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="นักเรียนทั้งหมด" value={String(studentCount ?? 0)} />
-          <StatCard label="Focus สำเร็จวันนี้" value={String(completed)} />
-          <StatCard label="Focus ล้มเหลววันนี้" value={String(failed)} />
-          <StatCard label="นาทีโฟกัสวันนี้" value={String(focusMinutes)} />
-        </div>
-        <div className="mt-4">
-          <StatCard label="Screen time เฉลี่ยวันนี้ (นาที)" value={String(avgScreen)} />
-        </div>
+      <PublicNav />
+      <main>
+        <section className="max-w-5xl mx-auto px-6 py-16 text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4">Pet Focus</h1>
+          <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-8">
+            แอปช่วยลดเวลาใช้มือถือสำหรับนักเรียน ด้วยสัตว์เลี้ยงเสมือนเป็นแรงจูงใจ
+            โฟกัสให้สำเร็จ สัตว์เลี้ยงมีความสุข ได้เหรียญไปแต่งตัวและตกแต่งห้อง
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/download"
+              className="inline-block bg-emerald-600 hover:bg-emerald-500 rounded-lg px-8 py-3 font-medium"
+            >
+              ดาวน์โหลด APK
+            </Link>
+          </div>
+          <p className="text-slate-500 text-sm mt-4">รองรับ Android เท่านั้น</p>
+        </section>
 
-        <DashboardCharts data={chartData} />
+        <section className="max-w-5xl mx-auto px-6 pb-16">
+          <h2 className="text-2xl font-bold mb-8 text-center">ฟีเจอร์หลัก</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {features.map((feature) => (
+              <div
+                key={feature.title}
+                className="bg-slate-900 border border-slate-800 rounded-xl p-6"
+              >
+                <h3 className="text-lg font-semibold text-emerald-400 mb-2">{feature.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <Link
-          href="/students"
-          className="inline-block mt-8 text-emerald-400 hover:text-emerald-300 text-sm"
-        >
-          ดูรายชื่อนักเรียน →
-        </Link>
+        <section className="border-t border-slate-800 bg-slate-900/50">
+          <div className="max-w-5xl mx-auto px-6 py-12 text-center">
+            <h2 className="text-xl font-bold mb-3">เริ่มใช้งาน</h2>
+            <p className="text-slate-400 text-sm max-w-lg mx-auto mb-6">
+              ดาวน์โหลดแอป ติดตั้งบน Android แล้วลงทะเบียนด้วยรหัสนักเรียนที่ได้รับจากโรงเรียน
+            </p>
+            <Link
+              href="/download"
+              className="inline-block text-emerald-400 hover:text-emerald-300 text-sm"
+            >
+              ไปหน้าดาวน์โหลด →
+            </Link>
+          </div>
+        </section>
       </main>
     </>
-  )
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-      <p className="text-slate-400 text-sm">{label}</p>
-      <p className="text-3xl font-bold mt-1">{value}</p>
-    </div>
   )
 }

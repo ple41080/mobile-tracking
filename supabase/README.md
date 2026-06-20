@@ -66,6 +66,7 @@ values (
 4. Environment Variables (Production + Preview):
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_APK_DOWNLOAD_URL` — public URL ของไฟล์ APK (Supabase Storage / EAS artifact)
 5. Deploy
 
 ### Supabase Auth (หลังได้ URL จริง)
@@ -83,5 +84,6 @@ cd admin-web
 vercel link          # เลือก project / team
 vercel env add NEXT_PUBLIC_SUPABASE_URL production
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
+vercel env add NEXT_PUBLIC_APK_DOWNLOAD_URL production
 vercel --prod
 ```
