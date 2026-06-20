@@ -56,5 +56,5 @@ export async function loginAction(
     return { error: 'บัญชีนี้ไม่มีสิทธิ์ admin' }
   }
 
-  redirect('/')
+  redirect('/dashboard')
 }

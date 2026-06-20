@@ -1,7 +1,15 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const PUBLIC_PATHS = ['/', '/download', '/login']
+
+function isPublicPath(pathname: string) {
+  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+}
+
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -27,7 +35,11 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const isLogin = request.nextUrl.pathname.startsWith('/login')
+  const isLogin = pathname.startsWith('/login')
+
+  if (!user && isPublicPath(pathname)) {
+    return supabaseResponse
+  }
 
   if (!user && !isLogin) {
     const url = request.nextUrl.clone()
@@ -37,11 +49,11 @@ export async function middleware(request: NextRequest) {
 
   if (user && isLogin) {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
-  if (user && !isLogin) {
+  if (user && !isPublicPath(pathname)) {
     const { data: adminRow } = await supabase
       .from('admin_users')
       .select('user_id')
