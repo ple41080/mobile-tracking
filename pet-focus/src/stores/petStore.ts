@@ -8,6 +8,9 @@ import {
   PetId,
   getPetCatalogEntry,
 } from '@/types/pet'
+import { OUTFIT_ITEMS } from '@/types/shop'
+
+const OUTFIT_IDS = new Set(OUTFIT_ITEMS.map((item) => item.id))
 
 interface PetState {
   name: string
@@ -73,11 +76,21 @@ export const usePetStore = create<PetState>()(
       },
 
       equipItem: (itemId) =>
-        set((state) => ({
-          equippedItems: state.equippedItems.includes(itemId)
-            ? state.equippedItems.filter((i) => i !== itemId)
-            : [...state.equippedItems, itemId],
-        })),
+        set((state) => {
+          if (OUTFIT_IDS.has(itemId)) {
+            return {
+              equippedItems: state.equippedItems.includes(itemId)
+                ? state.equippedItems.filter((i) => i !== itemId)
+                : [...state.equippedItems, itemId],
+            }
+          }
+
+          return {
+            equippedItems: state.equippedItems.includes(itemId)
+              ? state.equippedItems.filter((i) => i !== itemId)
+              : [...state.equippedItems, itemId],
+          }
+        }),
 
       setPetName: (name) => set({ name }),
 
@@ -98,6 +111,7 @@ export const usePetStore = create<PetState>()(
         activePetId: state.activePetId,
         species: state.species,
         coins: state.coins,
+        equippedItems: state.equippedItems,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)

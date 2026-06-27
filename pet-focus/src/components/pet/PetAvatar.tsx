@@ -11,13 +11,14 @@ interface PetAvatarProps {
 }
 
 export function PetAvatar({ name, level, happiness }: PetAvatarProps) {
-  const species = usePetStore((s) => s.species)
+  const activePetId = usePetStore((s) => s.activePetId)
+  const equippedItems = usePetStore((s) => s.equippedItems)
   const mood = getPetMood(happiness)
   const { text: moodText } = PET_MOOD_CONFIG[mood]
 
   return (
     <View className="items-center py-4">
-      <PetRive species={species} size={180} />
+      <PetRive activePetId={activePetId} size={180} equippedItems={equippedItems} />
       <Text className="text-text-secondary text-sm mt-1 text-center">{moodText}</Text>
       <Text className="text-white text-xl font-bold mt-1">
         {name}

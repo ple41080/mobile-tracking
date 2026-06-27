@@ -7,15 +7,24 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { Buffer } from 'buffer'
 import { IdentityGate } from '@/components/onboarding/IdentityGate'
 import { requestNotificationPermission } from '@/services/permissions'
+import { usePetStore } from '@/stores/petStore'
 
 if (typeof global.Buffer === 'undefined') {
   global.Buffer = Buffer
 }
 
 export default function RootLayout() {
+  const petHydrated = usePetStore((s) => s._hasHydrated)
+
   useEffect(() => {
     requestNotificationPermission()
   }, [])
+
+  useEffect(() => {
+    if (__DEV__ && petHydrated) {
+      usePetStore.setState({ coins: 10000 })
+    }
+  }, [petHydrated])
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

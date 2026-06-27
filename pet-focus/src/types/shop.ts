@@ -1,4 +1,5 @@
 import { PetId } from '@/types/pet'
+import { STRAW_HAT_IMG, WIZARD_HAT_IMG, SUNGLASSES_IMG } from '@/assets/shopAssets'
 
 export type ItemCategory = 'outfit' | 'room' | 'background' | 'pet'
 export type ItemRarity = 'common' | 'rare' | 'legendary'
@@ -13,6 +14,10 @@ export interface ShopItem {
   price: number
   currency: ItemCurrency
   description: string
+  /** PNG thumbnail for outfit items */
+  image?: number
+  /** Rive state machine boolean input name (outfit items) */
+  riveInput?: string
   // background items only
   bgColor?: string
   bgGradient?: [string, string]
@@ -34,8 +39,9 @@ export const RARITY_LABELS: Record<ItemRarity, string> = {
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
-  { id: 'hat_school', name: 'หมวกนักเรียน', emoji: '🎓', category: 'outfit', rarity: 'common', price: 100, currency: 'coin', description: 'หมวกแห่งความรู้' },
-  { id: 'glasses_sun', name: 'แว่นกันแดด', emoji: '🕶️', category: 'outfit', rarity: 'common', price: 150, currency: 'coin', description: 'ดูเท่มากเลย' },
+  { id: 'hat_school', name: 'หมวกพ่อมด', emoji: '🧙', category: 'outfit', rarity: 'common', price: 100, currency: 'coin', description: 'หมวกวิเศษของแมว', image: WIZARD_HAT_IMG, riveInput: 'wizard_hat' },
+  { id: 'glasses_sun', name: 'แว่นกันแดด', emoji: '🕶️', category: 'outfit', rarity: 'common', price: 150, currency: 'coin', description: 'ดูเท่มากเลย', image: SUNGLASSES_IMG, riveInput: 'sunglass' },
+  { id: 'hat_straw', name: 'หมวกฟาง', emoji: '👒', category: 'outfit', rarity: 'common', price: 100, currency: 'coin', description: 'หมวกฟางสไตล์ทะเล', image: STRAW_HAT_IMG, riveInput: 'straw_hat' },
   // { id: 'scarf_red', name: 'ผ้าพันคอแดง', emoji: '🧣', category: 'outfit', rarity: 'common', price: 80, currency: 'coin', description: 'อบอุ่นสบายใจ' },
   // { id: 'wings_butterfly', name: 'ปีกผีเสื้อ', emoji: '🦋', category: 'outfit', rarity: 'rare', price: 300, currency: 'coin', description: 'บินได้เหมือนนางฟ้า' },
   // { id: 'crown_gold', name: 'มงกุฎทอง', emoji: '👑', category: 'outfit', rarity: 'legendary', price: 800, currency: 'coin', description: 'ราชาแห่งโฟกัส' },
@@ -57,7 +63,19 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'bg_rainbow', name: 'สายรุ้ง', emoji: '🌈', category: 'background', rarity: 'legendary', price: 900, currency: 'coin', description: 'สีสันมหาสนุก', bgGradient: ['#FF6B6B', '#4ECDC4'], tabBarColor: '#B71C1C', surfaceColor: '#C62828' },
 
   // ─── Pets ────────────────────────────────────────────────────────────────────
-  { id: 'pet_dog', name: 'สุนัข', emoji: '🐕', category: 'pet', rarity: 'rare', price: 500, currency: 'coin', description: 'เพื่อนซี้น้องหมา', petId: 'pet_dog' },
+  { id: 'pet_dog', name: 'สุนัข', emoji: '🐕', category: 'pet', rarity: 'rare', price: 0, currency: 'coin', description: 'เพื่อนซี้น้องหมา', petId: 'pet_dog' },
+  { id: 'pet_orange_cat', name: 'แมวส้ม', emoji: '🧡', category: 'pet', rarity: 'rare', price: 500, currency: 'coin', description: 'แมวส้มน่ารัก', petId: 'pet_orange_cat' },
   // { id: 'pet_rabbit', name: 'กระต่าย', emoji: '🐇', category: 'pet', rarity: 'rare', price: 500, currency: 'coin', description: 'กระโดดไปกระโดดมา' },
   // { id: 'pet_dragon', name: 'มังกร', emoji: '🐲', category: 'pet', rarity: 'legendary', price: 1200, currency: 'coin', description: 'มังกรผู้พิทักษ์' },
 ]
+
+export const OUTFIT_ITEMS = SHOP_ITEMS.filter((i) => i.category === 'outfit')
+
+export function getOutfitRiveInputs(equippedItemIds: string[]): Record<string, boolean> {
+  const inputs: Record<string, boolean> = {}
+  for (const item of OUTFIT_ITEMS) {
+    if (!item.riveInput) continue
+    inputs[item.riveInput] = equippedItemIds.includes(item.id)
+  }
+  return inputs
+}

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "PET FOCUS",
-    "slug": "PET FOCUS",
+    "slug": "pet-focus",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon_pet.png",
@@ -21,7 +21,7 @@
         "foregroundImage": "./assets/icon_pet.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.petfocus",
+      "package": "com.oattaphon.petfocus",
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.PACKAGE_USAGE_STATS",

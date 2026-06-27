@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, TouchableOpacity, Modal, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, Modal, Alert, Image } from 'react-native'
 import { ThemedScreen } from '@/components/ThemedScreen'
 import { useAppTheme } from '@/hooks/useAppTheme'
 import { ItemGrid } from '@/components/shop/ItemGrid'
@@ -105,6 +105,8 @@ export default function ShopScreen() {
       setBackground(selectedItem)
     } else if (selectedItem.category === 'room') {
       toggleDecoration(id)
+    } else if (selectedItem.category === 'outfit') {
+      equipItem(id)
     }
     setSelectedItem(null)
   }
@@ -162,6 +164,12 @@ export default function ShopScreen() {
                     <View style={{ backgroundColor: selectedItem.bgColor, width: 80, height: 80, borderRadius: 16, marginBottom: 8, alignItems: 'center', justifyContent: 'center' }}>
                       <Text className="text-4xl">{selectedItem.emoji}</Text>
                     </View>
+                  ) : selectedItem.image ? (
+                    <Image
+                      source={selectedItem.image}
+                      style={{ width: 80, height: 80, marginBottom: 8 }}
+                      resizeMode="contain"
+                    />
                   ) : (
                     <Text className="text-6xl mb-2">{selectedItem.emoji}</Text>
                   )}

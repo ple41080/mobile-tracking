@@ -28,13 +28,13 @@ npm run android        # build dev client ครั้งแรก
 - **มือถือจริง (Wi‑Fi อย่างเดียว):** `npm start` หรือ `npm run start:tunnel`
 - โมเดลใบหน้า: `assets/models/mobile_face_net.tflite` (ต้องเป็นไฟล์ binary จริง ไม่ใช่ HTML)
 - ไอคอนแอป: `assets/icon_pet.png` · Splash/loading: `assets/pet_loading.png`
-- Rive: แมว → `pet_cat.riv`; หมา → `pet_dog_and_cat.riv` (input `cat/dog=true`)
+- Rive: แมว (`pet_cat.riv`) · แมวส้ม/หมา (`pet_dog_and_cat.riv`, input `cat/dog`: false=แมวส้ม, true=หมา); outfit inputs ทุกสัตว์: `straw_hat`, `wizard_hat`, `sunglass`
 
 ## โครงสร้างหน้า (app/(tabs)/)
-- `index.tsx` — หน้า Home: สัตว์เลี้ยง (Rive), HUD, stat bar, ของตกแต่ง, **แตะชื่อเปลี่ยนชื่อ**, **sidebar สลับสัตว์** (`PetSwitcherSidebar`)
+- `index.tsx` — หน้า Home: สัตว์เลี้ยง (Rive + เครื่องแต่งกาย), HUD, stat bar, ของตกแต่ง, **แต่งตัว** (`OutfitPicker`), **แตะชื่อเปลี่ยนชื่อ**, **sidebar สลับสัตว์** (`PetSwitcherSidebar`)
 - `focus.tsx` — Focus Mode: เลือกเวลา, timer ring, เริ่ม/ยกเลิก, modal สำเร็จ + **mood check-in**, modal fail (เชิงบวก)
 - `quests.tsx` — **เควสทำงานบ้าน**: ถ่ายรูป in-app หรือเลือกจากคลัง → ML Kit ตรวจ label + เทียบใบหน้า (local) → รับเหรียญ, ไม่เก็บรูป; แบนเนอร์ลงทะเบียนใบหน้าถ้ายังไม่ enroll
-- `shop.tsx` — ร้านค้า: ซื้อด้วยเหรียญ ⭐; แท็บสัตว์ → ซื้อหมา (`pet_dog` 500 coins) และสลับ active pet
+- `shop.tsx` — ร้านค้า: ซื้อด้วยเหรียญ ⭐; แท็บแต่งตัว (PNG thumbnail) · แท็บสัตว์ → ซื้อหมา/แมวส้ม และสลับ active pet
 - `stats.tsx` — สถิติ: screen time วันนี้, streak, สรุปสัปดาห์, AI tip, กราฟแอป, **ลงทะเบียนใบหน้าใหม่**
 
 ## Onboarding (app/onboarding/)
@@ -79,7 +79,8 @@ npm run android        # build dev client ครั้งแรก
 - ตั้งค่า: ดู [`supabase/README.md`](../supabase/README.md) §7 Vercel; env จาก `.env.local.example`
 
 ## Components สำคัญ
-- `PetRive` — แสดง Rive ตาม `species` (cat/dog)
+- `PetRive` — แสดง Rive ตาม `activePetId` (catalog `riveSource` + `dogCatInput`); ส่ง outfit inputs (`straw_hat`, `wizard_hat`, `sunglass`) จาก `equippedItems` ทุกสัตว์
+- `OutfitPicker` — ปุ่ม 👗 หน้า Home → เลือกสวม/ถอดเครื่องแต่งกายที่ซื้อแล้ว (หลายชิ้นพร้อมกัน, ทุกสัตว์)
 - `PetSwitcherSidebar` — ปุ่มลอยขวา Home สลับสัตว์; หมาต้องซื้อก่อน
 - `PetNameEditor` — แตะชื่อบน Home → Modal แก้ชื่อ (trim, 1–12 ตัวอักษร) → `setPetName`
 - `ChoreQuestList` — UI เควส + ถ่ายรูป (`CameraCaptureModal`) / เลือกจากคลัง; gate ต้อง enroll ใบหน้าก่อน
@@ -98,7 +99,7 @@ npm run android        # build dev client ครั้งแรก
 6. **ลงทะเบียนใบหน้า** — **ไม่บังคับ** ตอนเปิดแอป; เปิดจากหน้าเควสหรือ Stats; เก็บ embedding ใน SecureStore ไม่เก็บรูป; re-enroll ได้จาก Stats
 7. **เควสทำงานบ้าน** — 4 เควส (`CHORE_QUESTS` ใน `focus.ts`); ถ่าย in-app หรือเลือกรูปจากคลัง → ต้อง enroll ใบหน้าก่อน + ผ่านทั้งใบหน้า + label งานบ้าน; ลองใหม่ได้ไม่จำกัดจนกว่าจะสำเร็จ; รางวัล coins → `petStore.addCoins`
 8. **เปลี่ยนชื่อสัตว์เลี้ยง** — แตะชื่อบน Home → modal; บันทึกลง `petStore.name` (persist AsyncStorage)
-9. **สัตว์เลี้ยงหลายตัว** — แมว default (`pet_cat`); หมาซื้อในร้าน (`pet_dog`); สลับผ่าน sidebar หรือร้านค้า → `setActivePet` sync `species` + Rive file
+9. **สัตว์เลี้ยงหลายตัว** — แมว default (`pet_cat`); แมวส้ม (`pet_orange_cat`, 500 ⭐) · หมา (`pet_dog`); สลับผ่าน sidebar หรือร้านค้า → `setActivePet` sync `species` + Rive file
 10. **ลงทะเบียนนักเรียน** — 1 รหัส = 1 เครื่อง; ลบแอปแล้วติดตั้งใหม่ + รหัสเดิม + device เดิม → `register_student` restore session (ไม่ error ซ้ำ)
 11. **Supabase sync** — focus session (complete/fail/cancel), daily screen time, chore completion → Postgres; face embedding **ไม่ sync**
 
@@ -117,3 +118,4 @@ npm run android        # build dev client ครั้งแรก
 - เพิ่ม Focus Foreground Service: ขอสิทธิ์แจ้งเตือน + notification นับถอยหลังขณะโฟกัสเบื้องหลัง (`FocusForegroundService.kt`)
 - เพิ่มสุนัข (`pet_dog_and_cat.riv`) + sidebar สลับสัตว์ + ซื้อหมาในร้าน (persist ownedItems/activePetId)
 - เพิ่มระบบเควสทำงานบ้าน + ลงทะเบียนใบหน้า (local-first, ML Kit + MobileFaceNet, ไม่ใช้ Firebase Storage/Firestore)
+- อัปเดต Rive outfit inputs (`straw_hat`/`wizard_hat`/`sunglass`), หมวกฟางในร้าน, แมวส้ม, สวม outfit หลายชิ้นได้ทุกสัตว์

@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity, Image } from 'react-native'
 import { ShopItem } from '@/types/shop'
 
 interface ItemCardProps {
@@ -18,7 +18,15 @@ export function ItemCard({ item, isOwned, isEquipped, onPress }: ItemCardProps) 
         isEquipped ? 'border-yellow' : 'border-white/10'
       }`}
     >
-      <Text className="text-4xl text-center my-2">{item.emoji}</Text>
+      {item.image ? (
+        <Image
+          source={item.image}
+          style={{ width: 48, height: 48, alignSelf: 'center', marginVertical: 8 }}
+          resizeMode="contain"
+        />
+      ) : (
+        <Text className="text-4xl text-center my-2">{item.emoji}</Text>
+      )}
       <Text className="text-white text-xs font-semibold text-center" numberOfLines={1}>
         {item.name}
       </Text>

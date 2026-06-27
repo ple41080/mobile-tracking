@@ -1,6 +1,8 @@
 export type PetSpecies = 'cat' | 'dog' | 'rabbit' | 'hamster'
 
-export type PetId = 'pet_cat' | 'pet_dog'
+export type PetId = 'pet_cat' | 'pet_dog' | 'pet_orange_cat'
+
+export type PetRiveSource = 'pet_cat' | 'pet_dog_and_cat'
 
 export const DEFAULT_PET_ID: PetId = 'pet_cat'
 export const DEFAULT_PET_NAME = 'น้องแมว'
@@ -11,11 +13,15 @@ export interface PetCatalogEntry {
   emoji: string
   name: string
   requiresPurchase: boolean
+  riveSource: PetRiveSource
+  /** For pet_dog_and_cat: true = dog, false = orange cat */
+  dogCatInput?: boolean
 }
 
 export const PET_CATALOG: PetCatalogEntry[] = [
-  { id: 'pet_cat', species: 'cat', emoji: '🐱', name: 'แมว', requiresPurchase: false },
-  { id: 'pet_dog', species: 'dog', emoji: '🐕', name: 'สุนัข', requiresPurchase: true },
+  { id: 'pet_cat', species: 'cat', emoji: '🐱', name: 'แมว', requiresPurchase: false, riveSource: 'pet_cat' },
+  { id: 'pet_orange_cat', species: 'cat', emoji: '🧡', name: 'แมวส้ม', requiresPurchase: true, riveSource: 'pet_dog_and_cat', dogCatInput: false },
+  { id: 'pet_dog', species: 'dog', emoji: '🐕', name: 'สุนัข', requiresPurchase: true, riveSource: 'pet_dog_and_cat', dogCatInput: true },
 ]
 
 export function getPetCatalogEntry(petId: PetId): PetCatalogEntry {

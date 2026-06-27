@@ -3,6 +3,7 @@ import { View, Text, Dimensions, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { PetRive } from '@/components/pet/PetRive'
+import { OutfitPicker } from '@/components/pet/OutfitPicker'
 import { PetNameEditor } from '@/components/pet/PetNameEditor'
 import { PetSwitcherSidebar } from '@/components/pet/PetSwitcherSidebar'
 import { usePetStatus } from '@/hooks/usePetStatus'
@@ -14,8 +15,10 @@ import { getPetMood } from '@/types/pet'
 const { height } = Dimensions.get('window')
 
 export default function HomeScreen() {
-  const { name, level, happiness, hp, coins, species } = usePetStatus()
+  const { name, level, happiness, hp, coins } = usePetStatus()
   const setPetName = usePetStore((s) => s.setPetName)
+  const activePetId = usePetStore((s) => s.activePetId)
+  const equippedItems = usePetStore((s) => s.equippedItems)
   const { selectedBgColor, selectedBgGradient, placedDecorations } = useRoomStore()
   const mood = getPetMood(happiness)
 
@@ -68,8 +71,9 @@ export default function HomeScreen() {
 
         {/* Pet */}
         <View className="flex-1 items-center justify-center" pointerEvents="box-none">
+          <OutfitPicker surfaceColor={surfaceColor} textColor={textColor} />
           <PetSwitcherSidebar surfaceColor={surfaceColor} textColor={textColor} />
-          <PetRive species={species} size={height * 0.42} />
+          <PetRive activePetId={activePetId} size={height * 0.42} equippedItems={equippedItems} />
           <PetNameEditor name={name} textColor={textColor} onRename={setPetName} />
           <Text style={{ color: textSecondary }} className="text-xs mt-0.5">
             {mood === 'happy' ? 'มีความสุข 😊' : mood === 'neutral' ? 'ปกติ 😐' : 'เศร้า 😿'}

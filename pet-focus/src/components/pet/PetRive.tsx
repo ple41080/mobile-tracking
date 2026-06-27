@@ -1,6 +1,7 @@
-import React, { useCallback, useRef } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { View, NativeModules } from 'react-native'
-import { PetSpecies } from '@/types/pet'
+import { PetId, getPetCatalogEntry } from '@/types/pet'
+import { getOutfitRiveInputs } from '@/types/shop'
 import { PET_CAT_RIV, PET_DOG_AND_CAT_RIV } from '@/assets/riveAssets'
 
 const isRiveAvailable = !!NativeModules.RiveReactNativeModule
@@ -18,47 +19,68 @@ const STATE_MACHINE = 'State Machine 1'
 const DOG_CAT_INPUT = 'cat/dog'
 
 interface PetRiveProps {
-  species: PetSpecies
+  activePetId: PetId
   size?: number
   stateMachineName?: string
+  equippedItems?: string[]
 }
 
-function setDogMode(ref: React.RefObject<any>, stateMachineName: string) {
+function applyRiveInputs(
+  ref: React.RefObject<any>,
+  stateMachineName: string,
+  activePetId: PetId,
+  equippedItems: string[],
+) {
+  if (!ref.current) return
+
+  const entry = getPetCatalogEntry(activePetId)
+
   try {
-    ref.current?.setInputState(stateMachineName, DOG_CAT_INPUT, true)
+    if (entry.dogCatInput !== undefined) {
+      ref.current.setInputState(stateMachineName, DOG_CAT_INPUT, entry.dogCatInput)
+    }
+
+    const outfitInputs = getOutfitRiveInputs(equippedItems)
+    for (const [inputName, value] of Object.entries(outfitInputs)) {
+      ref.current.setInputState(stateMachineName, inputName, value)
+    }
   } catch {
     // Rive native may not be ready yet
   }
 }
 
 export function PetRive({
-  species,
+  activePetId,
   size = 200,
   stateMachineName = STATE_MACHINE,
+  equippedItems = [],
 }: PetRiveProps) {
   const riveRef = useRef<any>(null)
-  const isDog = species === 'dog'
+  const entry = getPetCatalogEntry(activePetId)
+  const source = entry.riveSource === 'pet_dog_and_cat' ? PET_DOG_AND_CAT_RIV : PET_CAT_RIV
 
-  const applyDogInputs = useCallback(() => {
-    setDogMode(riveRef, stateMachineName)
-  }, [stateMachineName])
+  const applyInputs = useCallback(() => {
+    applyRiveInputs(riveRef, stateMachineName, activePetId, equippedItems)
+  }, [stateMachineName, activePetId, equippedItems])
+
+  useEffect(() => {
+    applyInputs()
+  }, [applyInputs])
 
   if (!Rive || !isRiveAvailable) {
     return <View style={{ width: size, height: size }} />
   }
 
-  const source = isDog ? PET_DOG_AND_CAT_RIV : PET_CAT_RIV
-
   return (
     <View style={{ width: size, height: size }}>
       <Rive
-        key={species}
-        ref={isDog ? riveRef : undefined}
+        key={activePetId}
+        ref={riveRef}
         source={source}
         stateMachineName={stateMachineName}
         style={{ width: size, height: size }}
         autoplay
-        onPlay={isDog ? applyDogInputs : undefined}
+        onPlay={applyInputs}
       />
     </View>
   )
