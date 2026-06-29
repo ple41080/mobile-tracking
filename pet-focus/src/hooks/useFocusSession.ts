@@ -63,11 +63,14 @@ export function useFocusSession() {
     const totalSeconds = selectedMinutes * 60
 
     startFocusTimer(
-      () => {
-        useFocusStore.getState().tickSecond()
-        const { status: s, remainingSeconds: r } = useFocusStore.getState()
-        if (s === 'completed' || r === 0) {
-          handleComplete()
+      (remaining) => {
+        if (remaining !== undefined) {
+          useFocusStore.getState().syncRemainingSeconds(remaining)
+          if (remaining <= 0) handleComplete()
+        } else {
+          useFocusStore.getState().tickSecond()
+          const { status: s, remainingSeconds: r } = useFocusStore.getState()
+          if (s === 'completed' || r === 0) handleComplete()
         }
       },
       handleFail,

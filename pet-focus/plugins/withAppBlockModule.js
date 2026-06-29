@@ -6,24 +6,36 @@ const {
   withDangerousMod,
 } = require('@expo/config-plugins')
 
-const PACKAGE_IMPORT = 'import com.anonymous.petfocus.appblock.AppBlockPackage'
 const PACKAGE_REGISTER = 'packages.add(AppBlockPackage())'
 
 const SOURCE_DIR = path.join(__dirname, 'appblock')
+const TEMPLATE_PACKAGE = 'com.anonymous.petfocus'
 
-function copyAppBlockSources(projectRoot) {
+function packageToDir(androidPackage) {
+  return androidPackage.split('.').join(path.sep)
+}
+
+function copyAppBlockSources(projectRoot, androidPackage) {
   const targetDir = path.join(
     projectRoot,
-    'android/app/src/main/java/com/anonymous/petfocus/appblock'
+    'android/app/src/main/java',
+    packageToDir(androidPackage),
+    'appblock',
   )
   fs.mkdirSync(targetDir, { recursive: true })
   for (const file of fs.readdirSync(SOURCE_DIR)) {
     if (!file.endsWith('.kt')) continue
-    fs.copyFileSync(path.join(SOURCE_DIR, file), path.join(targetDir, file))
+    const content = fs
+      .readFileSync(path.join(SOURCE_DIR, file), 'utf8')
+      .replaceAll(TEMPLATE_PACKAGE, androidPackage)
+    fs.writeFileSync(path.join(targetDir, file), content)
   }
 }
 
 const withAppBlockModule = (config) => {
+  const androidPackage = config.android?.package ?? TEMPLATE_PACKAGE
+  const packageImport = `import ${androidPackage}.appblock.AppBlockPackage`
+
   config = withAndroidManifest(config, (cfg) => {
     const manifest = cfg.modResults.manifest
     const usesPermissions = manifest['uses-permission'] ?? []
@@ -80,17 +92,19 @@ const withAppBlockModule = (config) => {
 
   config = withMainApplication(config, (cfg) => {
     let contents = cfg.modResults.contents
-    if (!contents.includes(PACKAGE_IMPORT)) {
-      contents = contents.replace(
-        'import expo.modules.ReactNativeHostWrapper',
-        `import expo.modules.ReactNativeHostWrapper\n\n${PACKAGE_IMPORT}`
-      )
-    }
-    if (!contents.includes(PACKAGE_REGISTER)) {
-      contents = contents.replace(
-        'return packages',
-        `${PACKAGE_REGISTER}\n            return packages`
-      )
+    if (!contents.includes('AppBlockPackage')) {
+      if (!contents.includes(packageImport)) {
+        contents = contents.replace(
+          'import expo.modules.ReactNativeHostWrapper',
+          `import expo.modules.ReactNativeHostWrapper\n\n${packageImport}`,
+        )
+      }
+      if (!contents.includes(PACKAGE_REGISTER)) {
+        contents = contents.replace(
+          'return packages',
+          `${PACKAGE_REGISTER}\n            return packages`,
+        )
+      }
     }
     cfg.modResults.contents = contents
     return cfg
@@ -99,7 +113,7 @@ const withAppBlockModule = (config) => {
   config = withDangerousMod(config, [
     'android',
     async (cfg) => {
-      copyAppBlockSources(cfg.modRequest.projectRoot)
+      copyAppBlockSources(cfg.modRequest.projectRoot, androidPackage)
       return cfg
     },
   ])

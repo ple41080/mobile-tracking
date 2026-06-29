@@ -62,7 +62,7 @@ npm run android        # build dev client ครั้งแรก
 - `usePetStatus`, `useScreenTime`, `useDailyQuest`, `useAppTheme`
 
 ## Services (src/services/)
-- `appBlock.ts`, `focusTimer.ts` — เรียก native `AppBlockModule` / `FocusForegroundService` (pause/resume/fail ตาม foreground app); Android ใช้ `FocusForegroundService` (FGS) นับถอยหลัง + แสดง notification ขณะเบื้องหลัง; fallback JS `setInterval` ถ้า native ล้ม
+- `appBlock.ts`, `focusTimer.ts` — เรียก native `AppBlockModule` / `FocusForegroundService` (pause/resume/fail ตาม foreground app); Android ใช้ `FocusForegroundService` (FGS) นับถอยหลัง + แสดง notification ขณะเบื้องหลัง; UI timer sync จาก `onFocusTick.remainingSeconds` (native เป็น source of truth); fallback JS `setInterval` + `tickSecond()` ถ้า native ล้ม
 - `permissions.ts` — ขอสิทธิ์แจ้งเตือน (Android 13+) สำหรับ notification นับถอยหลัง; เปิด Settings ได้จาก Stats
 - `usageStats.ts` — Usage Access + ดึง screen time ผ่าน `AppBlockModule`
 - `faceVerifier.ts` — enroll/verify ใบหน้า (ML Kit + MobileFaceNet TFLite), embedding ใน SecureStore; enroll ต้องใบหน้าใหญ่ (~25% กว้างภาพ), verify เควสยอมเล็กกว่า (~8%) เพื่อเห็นงานบ้านในภาพ
@@ -119,3 +119,4 @@ npm run android        # build dev client ครั้งแรก
 - เพิ่มสุนัข (`pet_dog_and_cat.riv`) + sidebar สลับสัตว์ + ซื้อหมาในร้าน (persist ownedItems/activePetId)
 - เพิ่มระบบเควสทำงานบ้าน + ลงทะเบียนใบหน้า (local-first, ML Kit + MobileFaceNet, ไม่ใช้ Firebase Storage/Firestore)
 - อัปเดต Rive outfit inputs (`straw_hat`/`wizard_hat`/`sunglass`), หมวกฟางในร้าน, แมวส้ม, สวม outfit หลายชิ้นได้ทุกสัตว์
+- Focus timer UI sync จาก native `remainingSeconds` (ไม่นับแยกใน JS)

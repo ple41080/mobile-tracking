@@ -3,13 +3,15 @@ import { NativeModules, NativeEventEmitter, Platform, Alert } from 'react-native
 const { AppBlockModule } = NativeModules
 const emitter = AppBlockModule ? new NativeEventEmitter(AppBlockModule) : null
 
+type OnTick = (remainingSeconds?: number) => void
+
 let tickSub: ReturnType<NonNullable<typeof emitter>['addListener']> | null = null
 let completeSub: ReturnType<NonNullable<typeof emitter>['addListener']> | null = null
 let blockSub: ReturnType<NonNullable<typeof emitter>['addListener']> | null = null
 let pauseSub: ReturnType<NonNullable<typeof emitter>['addListener']> | null = null
 let resumeSub: ReturnType<NonNullable<typeof emitter>['addListener']> | null = null
 let jsInterval: ReturnType<typeof setInterval> | null = null
-let onTickCallback: (() => void) | null = null
+let onTickCallback: OnTick | null = null
 let onFailCallback: (() => void) | null = null
 let onCompleteCallback: (() => void) | null = null
 let onPauseCallback: (() => void) | null = null
@@ -18,7 +20,7 @@ let isPaused = false
 let hasEnded = false
 
 export async function startFocusTimer(
-  onTick: () => void,
+  onTick: OnTick,
   onFail: () => void,
   onComplete: () => void,
   blockedPackages: string[] = [],
@@ -38,8 +40,8 @@ export async function startFocusTimer(
     try {
       await AppBlockModule.startFocusService(totalSeconds, blockedPackages)
 
-      tickSub = emitter.addListener('onFocusTick', () => {
-        if (!hasEnded) onTickCallback?.()
+      tickSub = emitter.addListener('onFocusTick', (event: { remainingSeconds?: number }) => {
+        if (!hasEnded) onTickCallback?.(event?.remainingSeconds)
       })
 
       completeSub = emitter.addListener('onFocusComplete', () => {

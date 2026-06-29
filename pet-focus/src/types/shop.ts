@@ -63,8 +63,8 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'bg_rainbow', name: 'สายรุ้ง', emoji: '🌈', category: 'background', rarity: 'legendary', price: 900, currency: 'coin', description: 'สีสันมหาสนุก', bgGradient: ['#FF6B6B', '#4ECDC4'], tabBarColor: '#B71C1C', surfaceColor: '#C62828' },
 
   // ─── Pets ────────────────────────────────────────────────────────────────────
-  { id: 'pet_dog', name: 'สุนัข', emoji: '🐕', category: 'pet', rarity: 'rare', price: 0, currency: 'coin', description: 'เพื่อนซี้น้องหมา', petId: 'pet_dog' },
-  { id: 'pet_orange_cat', name: 'แมวส้ม', emoji: '🧡', category: 'pet', rarity: 'rare', price: 500, currency: 'coin', description: 'แมวส้มน่ารัก', petId: 'pet_orange_cat' },
+  { id: 'pet_dog', name: 'สุนัข', emoji: '🐕', category: 'pet', rarity: 'rare', price: 200, currency: 'coin', description: 'เพื่อนซี้น้องหมา', petId: 'pet_dog' },
+  { id: 'pet_orange_cat', name: 'แมวส้ม', emoji: '🧡', category: 'pet', rarity: 'rare', price: 250, currency: 'coin', description: 'แมวส้มน่ารัก', petId: 'pet_orange_cat' },
   // { id: 'pet_rabbit', name: 'กระต่าย', emoji: '🐇', category: 'pet', rarity: 'rare', price: 500, currency: 'coin', description: 'กระโดดไปกระโดดมา' },
   // { id: 'pet_dragon', name: 'มังกร', emoji: '🐲', category: 'pet', rarity: 'legendary', price: 1200, currency: 'coin', description: 'มังกรผู้พิทักษ์' },
 ]

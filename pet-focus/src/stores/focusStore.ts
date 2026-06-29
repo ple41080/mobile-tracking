@@ -17,6 +17,7 @@ interface FocusState {
   // Actions
   selectDuration: (minutes: number) => void
   startSession: () => void
+  syncRemainingSeconds: (seconds: number) => void
   tickSecond: () => void
   pauseSession: () => void
   resumeSession: () => void
@@ -45,10 +46,17 @@ export const useFocusStore = create<FocusState>()(
         set({ selectedMinutes: minutes, remainingSeconds: minutes * 60 }),
 
       startSession: () =>
-        set({
+        set((state) => ({
           status: 'in_progress',
           isPaused: false,
           sessionStartTime: new Date(),
+          remainingSeconds: state.selectedMinutes * 60,
+        })),
+
+      syncRemainingSeconds: (seconds) =>
+        set((state) => {
+          if (state.status !== 'in_progress' || state.isPaused) return state
+          return { remainingSeconds: Math.max(0, seconds) }
         }),
 
       tickSecond: () =>

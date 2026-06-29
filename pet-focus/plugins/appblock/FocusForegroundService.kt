@@ -21,7 +21,6 @@ import android.os.Looper
 import android.os.Process
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import com.anonymous.petfocus.R
 
 class FocusForegroundService : Service() {
 
@@ -354,7 +353,7 @@ class FocusForegroundService : Service() {
 
   private fun notificationIconRes(): Int {
     val appIcon = applicationInfo.icon
-    return if (appIcon != 0) appIcon else R.mipmap.ic_launcher
+    return if (appIcon != 0) appIcon else android.R.drawable.ic_menu_info_details
   }
 
   private fun createNotificationChannels() {
